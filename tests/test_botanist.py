@@ -26,8 +26,40 @@ def test_get_duration():
     session.finish_time = datetime.datetime(2025, 6, 20, 11, 30, 0)  # 11:30:00
     # Now what should we assert?
     duration = session.get_duration()
-    assert duration == "1h 30m"# What should 1h 30m equal?
+    assert duration == "10:00-11:30 -- 01h 30m"# What should 1h 30m equal?
 
+def test_format_for_obsidian():
+    # Create a session
+    session = Session()
+    # Set its start and end times manually (so we control the values)
+    session.start()
+    session.start_time = datetime.datetime(2025, 6, 20, 12, 0, 0)
+    session.finish()
+    session.finish_time = datetime.datetime(2025, 6, 20, 13, 30, 0)
+    # Call a method like session.format_for_obsidian("Botanist TDD")
+    content = session.format_for_obsidian("Botanist TDD") 
+    assert content == "- 12:00-13:30 -- 01h 30m -- Botanist TDD"
+    
+    # Assert it returns the string: "- 12:00-13:30 -- 1h 30m -- Botanist TDD"
+
+    #Creates a temporary test file with that simple content
+def test_add_time_entry():
+    with open("filename.txt", "w") as file:
+        previousContent = "## Time\n- 10:00-11:00 -- 01h 00m -- Previous work\n## Quick Notes\n- Learned about modulo operator"
+        file.write(previousContent)
+    #Calls some method to add a time entry
+    session = Session()
+    session.start()
+    session.start_time = datetime.datetime(2025, 6, 20, 12, 0, 0)
+    session.finish()
+    session.finish_time = datetime.datetime(2025, 6, 20, 13, 30, 0)
+    session.save_to_file("filename.txt", "Current Work")
+    with open("filename.txt", "r") as file:
+        content = file.read()
+        assert content == "## Time\n- 10:00-11:00 -- 01h 00m -- Previous work\n- 12:00-13:30 -- 01h 30m -- Current Work\n## Quick Notes\n- Learned about modulo operator"
+         
+
+    #Reads the file back and checks it has both entries?
 
 
 # import datetime
