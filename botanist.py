@@ -1,3 +1,6 @@
+import sys
+import os
+
 import datetime
 class Session:
     def __init__(self):
@@ -29,7 +32,7 @@ class Session:
                 time_diff_full_hours += 1
             else:
                 minutes_left_over += 1
-        # this below will return 10:00-11:30 -- 1h 30m
+        # this below will return -> [10:00-11:30 -- 1h 30m]
         return f"{int(self.start_time.hour):02}:{int(self.start_time.minute):02}-{int(self.finish_time.hour):02}:{int(self.finish_time.minute):02} -- {int(time_diff_full_hours):02}h {int(minutes_left_over):02}m"
     
     def format_for_obsidian(self, desc):
@@ -40,25 +43,58 @@ class Session:
             content = file.read()
             # split file in strings
             splitContent = content.split('\n')
-            #debug
-            print(splitContent)
             #find last string before quick notes and add there
             position = None
             for i in range(0, len(splitContent)):
                 #handle case where it is found and where its not found
                 if splitContent[i] == "## Quick Notes":
                     position = i
+
             if position == None:
-                position = len(splitContent)
+                position = len(splitContent)-1
             timeLog = self.format_for_obsidian(desc)
             with open(filename, "w") as file:
                 splitContent.insert(position, timeLog)
                 joinedContent = '\n'.join(splitContent)
                 file.write(joinedContent)
 
+# could i survive falling off a plane into water if i made my legs super straight, hardened muscles, expected fully broken legs but survived the impact?
+if __name__ == "__main__":
+    # code here runs when script is executed
+    if(len(sys.argv) < 2 or len(sys.argv) > 3):
+        print("Sorry! Command invalid.")    
+    else:
+        # handle start case
+        if(sys.argv[0] == "botanist.py" and sys.argv[1] == "start"):
+            session = Session()
+            session.start()
+            with open(".hiddenBotanist", "w") as file:
+                file.write(str(session.start_time))
+            print(f"Session started at {session.start_time}.")
 
 
-
+        # handle finish case
+        elif(sys.argv[0] == "botanist.py" and sys.argv[1] == "finish"):
+            # if the file exists the session has started
+            if os.path.exists(".hiddenBotanist"):
+                session = Session()
+                session.start()
+                with open(".hiddenBotanist", "r") as file:
+                    startTime = file.read()
+                    session.start_time = datetime.datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S.%f")
+                session.finish()
+                os.remove(".hiddenBotanist")
+                if len(sys.argv) == 2:
+                    session.save_to_file("/Users/reatleat/Documents/Obsidian Vault/Data-Science-Curriculum/Current Week.md", "\n") #but now where do i get the desc from
+                else:
+                    session.save_to_file("/Users/reatleat/Documents/Obsidian Vault/Data-Science-Curriculum/Current Week.md", sys.argv[2])
+                print(f"Session saved and finished at {session.finish_time}. Congrats on another session!")
+            #if it doesnt exist the session has not started
+            else:
+                print("Session needs to be started first!")
+        # handle everything else
+        else:
+            print("Invalid argument.")
 
 
 
