@@ -57,9 +57,7 @@ def test_add_time_entry():
     with open("filename.txt", "r") as file:
         content = file.read()
         assert content == "## Time\n- 10:00-11:00 -- 01h 00m -- Previous work\n- 12:00-13:30 -- 01h 30m -- Current Work\n## Quick Notes\n- Learned about modulo operator"
-         
 
-    #Reads the file back and checks it has both entries?
 
 
 # import datetime
