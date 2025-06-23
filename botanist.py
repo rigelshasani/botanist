@@ -1,6 +1,7 @@
 import sys
 import os
 
+import json
 import datetime
 class Session:
     def __init__(self):
@@ -17,7 +18,6 @@ class Session:
     def get_duration(self):
         # Calculate the difference
         time_diff = self.finish_time - self.start_time
-        print(time_diff)
         time_diff_seconds = time_diff.total_seconds()
         # get full hours
         time_diff_full_hours = time_diff_seconds // 3600
@@ -62,7 +62,7 @@ class Session:
 
 def assign_flower(duration, streak=0):
     if duration < 1500:
-        return " _\n(_)\n |"
+        return "      _\n     (_)\n      |"
     elif duration < 2700:
         return "(@)\n | "
     elif duration < 3600:
@@ -86,7 +86,22 @@ def assign_flower(duration, streak=0):
 -------####%:---=
        |%#%%:    """
 
-# could i survive falling off a plane into water if i made my legs super straight, hardened muscles, expected fully broken legs but survived the impact?
+def open_or_create_garden():
+    # if the garden exists, load it
+    if os.path.exists(".hiddenGarden.json"):
+        with open(".hiddenGarden.json", "r") as file:
+            garden_data = json.load(file)
+            return garden_data
+    # if it doesn't, create it. 
+    else:
+        with open(".hiddenGarden.json", "w") as file:
+            garden_data = {
+                "current_streak": 0,
+                "sessions": []
+                }
+            json.dump(garden_data, file)
+            return garden_data
+
 if __name__ == "__main__":
     # code here runs when script is executed
     if(len(sys.argv) < 2 or len(sys.argv) > 3):
@@ -99,7 +114,6 @@ if __name__ == "__main__":
             with open(".hiddenBotanist", "w") as file:
                 file.write(str(session.start_time))
             print(f"Session started at {session.start_time.strftime('%A %m/%d %H:%M:%S')}")
-
 
         # handle finish case
         elif(sys.argv[0] == "botanist.py" and sys.argv[1] == "finish"):
@@ -115,10 +129,12 @@ if __name__ == "__main__":
                 if (session.finish_time - session.start_time).total_seconds() < 30:
                     print("Session will not be saved. Too short. Try harder.")
                 else:
-                    if len(sys.argv) == 2:
-                        session.save_to_file("/Users/reatleat/Documents/Obsidian Vault/Data-Science-Curriculum/Current Week.md", "\n") #but now where do i get the desc from
-                    else:
-                        session.save_to_file("/Users/reatleat/Documents/Obsidian Vault/Data-Science-Curriculum/Current Week.md", sys.argv[2])
+                    my_garden = open_or_create_garden()
+                    session.save_to_file("/Users/reatleat/Documents/Obsidian Vault/Data-Science-Curriculum/Current Week.md", sys.argv[2] if len(sys.argv) > 2 else "\n") #but now where do i get the desc from
+                    garden_dict = {"date" : session.start_time.strftime("%Y-%m-%d"), "duration": (session.finish_time - session.start_time).total_seconds(), "description" : sys.argv[2] if len(sys.argv) > 2 else "None provided.", "flower" : assign_flower((session.finish_time - session.start_time).total_seconds())}
+                    my_garden["sessions"].append(garden_dict)
+                    with open(".hiddenGarden.json", "w") as file:
+                        json.dump(my_garden, file)
                     print(f"Session saved and finished at {session.finish_time.strftime('%A %m/%d %H:%M:%S')}. Congrats on another session!")
             #if it doesnt exist the session has not started
             else:
@@ -134,34 +150,26 @@ if __name__ == "__main__":
                     print(flower)
             else:
                 print("Cannot show status of inexistent session. Create session first.")
+        # Garden time!
+        elif(sys.argv[1] == "garden"):
+            my_garden = open_or_create_garden()
+            print("Your current streak is: " + str(my_garden["current_streak"]) + " days.")
+            for i in my_garden["sessions"]:
+                for j in i:
+                    if(j == "flower"):
+                        print(j + " : ")
+                        print("\n")
+                        print("---------------")
+                        print("\n\n")
+                        print(str(i[j]))
+                        print("\n\n")
+                        print("---------------")
+                    elif(j == "duration"):
+                        seconds = i[j]
+                        minutes = round(seconds/60)
+                        print(j + " : " + f"{minutes}")
+                    else:
+                        print(j + " : " + str(i[j]))
+        
         else:
             print("Invalid argument.")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# mistakes made: 0 instead of None in variable initialization
-# function within a class needs self as a parameter within.
-# in tests i forgot that tests are supposed to be INDEPENDENT and i need to 
-# create a world within the test where everything that happens within the test
-# that does not affect the world outside it. 
