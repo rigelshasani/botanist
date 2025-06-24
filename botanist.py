@@ -62,11 +62,11 @@ class Session:
 
 def assign_flower(duration, streak=0):
     if duration < 1500:
-        return "      _\n     (_)\n      |"
+        return "_\n(_)\n|"
     elif duration < 2700:
         return "(@)\n | "
     elif duration < 3600:
-        return " .-. \n( + )\n |*| "
+        return " .-. \n( + )\n |*|  "
     else:
         return """        
         #%:.     
@@ -101,6 +101,26 @@ def open_or_create_garden():
                 }
             json.dump(garden_data, file)
             return garden_data
+
+# GOAL: Put boxes around flowers in garden display
+# WHY: Make it visually rewarding
+# CURRENT TASK: Add padding to strings
+# NEXT: 
+def print_box(flower):
+    # split the flower into strings
+    split_flower = flower.split("\n")
+    # create empty array
+    lengths = []
+    # loop through the split and get the lengths
+    for i in split_flower:
+        lengths.append(len(i))
+    max_width = max(lengths)
+    print("╭" + (max_width + 2) * "─" + "╮")
+    for line in split_flower:
+        centered = line.center(max_width + 2)
+        print("│" + centered + "│")
+    print("╰" + (max_width + 2) * "─" + "╯")
+
 
 if __name__ == "__main__":
     # code here runs when script is executed
@@ -157,13 +177,7 @@ if __name__ == "__main__":
             for i in my_garden["sessions"]:
                 for j in i:
                     if(j == "flower"):
-                        print(j + " : ")
-                        print("\n")
-                        print("---------------")
-                        print("\n\n")
-                        print(str(i[j]))
-                        print("\n\n")
-                        print("---------------")
+                        print_box(flower=i[j])
                     elif(j == "duration"):
                         seconds = i[j]
                         minutes = round(seconds/60)
@@ -173,3 +187,5 @@ if __name__ == "__main__":
         
         else:
             print("Invalid argument.")
+
+# %%
