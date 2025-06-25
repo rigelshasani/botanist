@@ -125,14 +125,28 @@ def print_box(flower):
     # print bottom box side
     print("╰" + (max_width + 2) * "─" + "╯")
 
+def calculate_total_pause_time(pauses):
+    duration = 0
+    for i in range(0, len(pauses)):
+        if(pauses[i]["finish"] is not None):
+            pause_finish_time = datetime.datetime.strptime(pauses[i]["finish"], "%Y-%m-%d %H:%M:%S.%f")
+            pause_start_time = datetime.datetime.strptime(pauses[i]["start"], "%Y-%m-%d %H:%M:%S.%f")
+            smallDuration = pause_finish_time - pause_start_time
+            duration += smallDuration.total_seconds()
+        else:
+            duration += (datetime.datetime.now() - datetime.datetime.strptime(pauses[i]["start"], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
+    return duration
 
 if __name__ == "__main__":
     # code here runs when script is executed
     if(len(sys.argv) < 2 or len(sys.argv) > 3):
         print("Sorry! Command invalid.")    
     else:
+        if(sys.argv[1] == "test"):
+            list = [{"start": "2025-06-25 18:00:00.123456", "finish": "2025-06-25 18:05:00.123456"}]
+            print(calculate_total_pause_time(list))
         # handle start case
-        if(sys.argv[1] == "start"):
+        elif(sys.argv[1] == "start"):
             session = Session()
             session.start()
             json_structure ={
@@ -151,19 +165,23 @@ if __name__ == "__main__":
                 with open(".hiddenBotanist", "r") as file:
                     currentSessionInfo = json.load(file)
                     session.start_time = datetime.datetime.strptime(currentSessionInfo["session_start"], "%Y-%m-%d %H:%M:%S.%f")
-                session.finish()
-                os.remove(".hiddenBotanist")
-                # cancel session if its short(testing or accidental)
-                if (session.finish_time - session.start_time).total_seconds() < 30:
-                    print("Session will not be saved. Too short. Try harder.")
-                else:
-                    my_garden = open_or_create_garden()
-                    session.save_to_file("/Users/reatleat/Documents/Obsidian Vault/Data-Science-Curriculum/Current Week.md", sys.argv[2] if len(sys.argv) > 2 else "\n") #but now where do i get the desc from
-                    garden_dict = {"date" : session.start_time.strftime("%Y-%m-%d"), "duration": (session.finish_time - session.start_time).total_seconds(), "description" : sys.argv[2] if len(sys.argv) > 2 else "None provided.", "flower" : assign_flower((session.finish_time - session.start_time).total_seconds())}
-                    my_garden["sessions"].append(garden_dict)
-                    with open(".hiddenGarden.json", "w") as file:
-                        json.dump(my_garden, file)
-                    print(f"Session saved and finished at {session.finish_time.strftime('%A %m/%d %H:%M:%S')}. Congrats on another session!")
+                    if currentSessionInfo["pauses"] and currentSessionInfo["pauses"][-1]["finish"] is None:
+                        print("You are currently paused. Cannot finish session without unpausing.")
+                    else:
+                        session.finish()
+                        os.remove(".hiddenBotanist")
+                        # cancel session if its short(testing or accidental)
+                        pauseTime = calculate_total_pause_time(currentSessionInfo["pauses"])
+                        if (session.finish_time - session.start_time).total_seconds() - pauseTime < 30:
+                            print("Session will not be saved. Too short. Try harder.")
+                        else:
+                            my_garden = open_or_create_garden()
+                            session.save_to_file("/Users/reatleat/Documents/Obsidian Vault/Data-Science-Curriculum/Current Week.md", sys.argv[2] if len(sys.argv) > 2 else "\n") #but now where do i get the desc from
+                            garden_dict = {"date" : session.start_time.strftime("%Y-%m-%d"), "duration": (session.finish_time - session.start_time).total_seconds() - pauseTime, "description" : sys.argv[2] if len(sys.argv) > 2 else "None provided.", "flower" : assign_flower((session.finish_time - session.start_time).total_seconds() - pauseTime)}
+                            my_garden["sessions"].append(garden_dict)
+                            with open(".hiddenGarden.json", "w") as file:
+                                json.dump(my_garden, file)
+                            print(f"Session saved and finished at {session.finish_time.strftime('%A %m/%d %H:%M:%S')}. Congrats on another session!")
             #if it doesnt exist the session has not started
             else:
                 print("Session needs to be started first!")
@@ -173,12 +191,13 @@ if __name__ == "__main__":
                 with open(".hiddenBotanist", "r") as file:
                     currentSessionInfo = json.load(file)
                     start_time = datetime.datetime.strptime(currentSessionInfo["session_start"], "%Y-%m-%d %H:%M:%S.%f")
-                    duration = datetime.datetime.now() - start_time
-                    flower = assign_flower(duration.total_seconds())
-                    if(duration.total_seconds() < 60):
-                        print("Your session has been ongoing for " + str(round(duration.total_seconds())) + " seconds.")
+                    pauseTime = calculate_total_pause_time(currentSessionInfo["pauses"])
+                    duration = (datetime.datetime.now() - start_time).total_seconds() - pauseTime
+                    flower = assign_flower(duration)
+                    if(duration < 60.0):
+                        print(f"Session: {round(duration + pauseTime)} seconds ({round(duration)} seconds working, {round(pauseTime)} seconds paused)")
                     else:
-                        print("Your session has been ongoing for " + str(round(duration.total_seconds() / 60)) + " minutes.")
+                        print(f"Session: {(duration + pauseTime) // 60 } minutes ({duration // 60} minutes working, {pauseTime // 60} minutes paused)")
                     print_box(flower)
             else:
                 print("Cannot show status of inexistent session. Create session first.")
