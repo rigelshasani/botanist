@@ -1,6 +1,7 @@
 import sys
 import os
 
+import csv
 import json
 import datetime
 class Session:
@@ -250,6 +251,22 @@ if __name__ == "__main__":
             else:
                 print("Cannot resume session that does not exist. Create one first.")
 
+        elif(sys.argv[1] == "export"):
+            if os.path.exists(".hiddenGarden.json"):
+                with open(".hiddenGarden.json", "r") as file:
+                    gardenInfo = json.load(file)
+                    # create output file
+                    with open("exportedGarden.csv", "w") as output:
+                        # create writer object
+                        writer = csv.writer(output)
+                        # create headers
+                        writer.writerow(["date", "duration", "description"])
+                        # fill content 
+                        for session in gardenInfo["sessions"]:
+                            writer.writerow([session["date"], round(session["duration"]), session["description"]])
+                print(f"Exported {len(gardenInfo["sessions"])} sessions to exportedGarden.csv")
+            else:
+                print("Data file does not exist. Start and finish a new session to create it.") 
         else:
             print("Invalid argument.")
 
