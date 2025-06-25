@@ -114,11 +114,15 @@ def print_box(flower):
     # loop through the split and get the lengths
     for i in split_flower:
         lengths.append(len(i))
+    # max value is max length
     max_width = max(lengths)
+    # print top box side
     print("╭" + (max_width + 2) * "─" + "╮")
+    # print centered line for each of the split lines
     for line in split_flower:
         centered = line.center(max_width + 2)
         print("│" + centered + "│")
+    # print bottom box side
     print("╰" + (max_width + 2) * "─" + "╯")
 
 
@@ -128,21 +132,25 @@ if __name__ == "__main__":
         print("Sorry! Command invalid.")    
     else:
         # handle start case
-        if(sys.argv[0] == "botanist.py" and sys.argv[1] == "start"):
+        if(sys.argv[1] == "start"):
             session = Session()
             session.start()
+            json_structure ={
+                                "session_start": str(session.start_time),
+                                "pauses": []
+                            }
             with open(".hiddenBotanist", "w") as file:
-                file.write(str(session.start_time))
+                json.dump(json_structure, file)
             print(f"Session started at {session.start_time.strftime('%A %m/%d %H:%M:%S')}")
 
         # handle finish case
-        elif(sys.argv[0] == "botanist.py" and sys.argv[1] == "finish"):
+        elif(sys.argv[1] == "finish"):
             # if the file exists the session has started
             if os.path.exists(".hiddenBotanist"):
                 session = Session()
                 with open(".hiddenBotanist", "r") as file:
-                    startTime = file.read()
-                    session.start_time = datetime.datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S.%f")
+                    currentSessionInfo = json.load(file)
+                    session.start_time = datetime.datetime.strptime(currentSessionInfo["session_start"], "%Y-%m-%d %H:%M:%S.%f")
                 session.finish()
                 os.remove(".hiddenBotanist")
                 # cancel session if its short(testing or accidental)
@@ -160,14 +168,18 @@ if __name__ == "__main__":
             else:
                 print("Session needs to be started first!")
         # handle everything else
-        elif(sys.argv[0] == "botanist.py" and sys.argv[1] == "status"):
+        elif(sys.argv[1] == "status"):
             if os.path.exists(".hiddenBotanist"):
                 with open(".hiddenBotanist", "r") as file:
-                    date = file.read()
-                    start_time = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S.%f")
+                    currentSessionInfo = json.load(file)
+                    start_time = datetime.datetime.strptime(currentSessionInfo["session_start"], "%Y-%m-%d %H:%M:%S.%f")
                     duration = datetime.datetime.now() - start_time
                     flower = assign_flower(duration.total_seconds())
-                    print(flower)
+                    if(duration.total_seconds() < 60):
+                        print("Your session has been ongoing for " + str(round(duration.total_seconds())) + " seconds.")
+                    else:
+                        print("Your session has been ongoing for " + str(round(duration.total_seconds() / 60)) + " minutes.")
+                    print_box(flower)
             else:
                 print("Cannot show status of inexistent session. Create session first.")
         # Garden time!
@@ -184,7 +196,41 @@ if __name__ == "__main__":
                         print(j + " : " + f"{minutes}")
                     else:
                         print(j + " : " + str(i[j]))
+        # Pause time
+        elif(sys.argv[1] == "pause"):
+            if os.path.exists(".hiddenBotanist"):
+                with open(".hiddenBotanist", "r") as file:
+                    currentSessionInfo = json.load(file)
+                    pauseTime = datetime.datetime.now()
+                    currentSessionInfo["pauses"].append({"start": str(pauseTime), "finish": None})
+                    print(currentSessionInfo)
+                    with open(".hiddenBotanist", "w") as file:
+                        json.dump(currentSessionInfo, file)
+                print("You have paused your session. Come back when you feel ready. Based on your study duration, I recommend " + "-- 5 minutes break.")
+            else:
+                print("Session needs to be started first!")
         
+        elif(sys.argv[1] == "resume"):
+            if os.path.exists(".hiddenBotanist"):
+                with open(".hiddenBotanist", "r") as file:
+                    currentSessionInfo = json.load(file)
+                    if currentSessionInfo["pauses"]: # empty lists are false in python
+                        if(currentSessionInfo["pauses"][-1]["finish"] is None):
+                            pauseTime = currentSessionInfo["pauses"][-1]["start"]
+                            resumeTime = datetime.datetime.now()
+                            start_time = datetime.datetime.strptime(pauseTime, "%Y-%m-%d %H:%M:%S.%f")
+                            pauseDuration = resumeTime - start_time
+                            currentSessionInfo["pauses"][-1]["finish"] = str(resumeTime)
+                            with open(".hiddenBotanist", "w") as file:
+                                json.dump(currentSessionInfo, file)
+                            print(f"You successfully unpaused. You were away for {round(pauseDuration.total_seconds() // 60)} minutes. Keep working!")
+                        else:
+                            print("You cannot resume a session you have not paused first.")
+                    else:
+                        print("You cannot resume a session that is not paused.")
+            else:
+                print("Cannot resume session that does not exist. Create one first.")
+
         else:
             print("Invalid argument.")
 
