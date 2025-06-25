@@ -83,7 +83,7 @@ Your focus duration determines which flower you grow:
 ```
 60+ minutes: Full Bloom
 ```bash
-  #%:.     
+        #%:.     
   #%=   ###%=:    
  ##%=   |##%=:    
  ##%=   ###%=:    
