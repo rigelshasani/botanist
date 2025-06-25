@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="screenshots/screen4.png" alt="Botanist Logo" />
+</p>
+
 # Botanist 🌱
 
 A command-line time tracker that rewards your focus with a growing ASCII garden.
@@ -51,6 +55,12 @@ Export to CSV:
 ```bash
 python botanist.py export
 ```
+
+## Screenshots
+
+![Checking status](screenshots/screen1.png)
+![Starting a session](screenshots/screen2.png)
+![Your garden grows](screenshots/screen3.png)
 
 ## Flower Rewards
 Your focus duration determines which flower you grow:
