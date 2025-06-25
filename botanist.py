@@ -177,7 +177,9 @@ if __name__ == "__main__":
                             print("Session will not be saved. Too short. Try harder.")
                         else:
                             my_garden = open_or_create_garden()
-                            session.save_to_file("/Users/reatleat/Documents/Obsidian Vault/Data-Science-Curriculum/Current Week.md", sys.argv[2] if len(sys.argv) > 2 else "\n") #but now where do i get the desc from
+                            obsidian_path = os.environ.get('BOTANIST_OBSIDIAN_PATH')
+                            if obsidian_path:
+                                session.save_to_file(obsidian_path, sys.argv[2] if len(sys.argv) > 2 else "\n") 
                             garden_dict = {"date" : session.start_time.strftime("%Y-%m-%d"), "duration": (session.finish_time - session.start_time).total_seconds() - pauseTime, "description" : sys.argv[2] if len(sys.argv) > 2 else "None provided.", "flower" : assign_flower((session.finish_time - session.start_time).total_seconds() - pauseTime)}
                             my_garden["sessions"].append(garden_dict)
                             with open(".hiddenGarden.json", "w") as file:
