@@ -61,15 +61,7 @@ class Session:
                 joinedContent = '\n'.join(splitContent)
                 file.write(joinedContent)
 
-def assign_flower(duration, streak=0):
-    if duration < 1500:
-        return "_\n(_)\n|"
-    elif duration < 2700:
-        return "(@)\n | "
-    elif duration < 3600:
-        return " .-. \n( + )\n |*|  "
-    else:
-        return """        
+FULL_BLOOM = """        
         #%:.     
  #%=   ###%=:    
 ##%=   |##%=:    
@@ -86,6 +78,16 @@ def assign_flower(duration, streak=0):
        |##%%:    
 -------####%:---=
        |%#%%:    """
+
+def assign_flower(duration, streak=0):
+    if duration < 1500:
+        return "_\n(_)\n|"
+    elif duration < 2700:
+        return "(@)\n | "
+    elif duration < 3600:
+        return " .-. \n( + )\n |*|  "
+    else:
+        return FULL_BLOOM
 
 def open_or_create_garden():
     # if the garden exists, load it
@@ -144,8 +146,18 @@ if __name__ == "__main__":
         print("Sorry! Command invalid.")    
     else:
         if(sys.argv[1] == "test"):
-            list = [{"start": "2025-06-25 18:00:00.123456", "finish": "2025-06-25 18:05:00.123456"}]
-            print(calculate_total_pause_time(list))
+            print("Testing all flowers:\n")
+            print("< 25 min:")
+            print_box(assign_flower(1000))
+            
+            print("\n25-45 min:")
+            print_box(assign_flower(2000))
+            
+            print("\n45-60 min:")
+            print_box(assign_flower(3000))
+            
+            print("\n60+ min:")
+            print_box(assign_flower(4000))
         # handle start case
         elif(sys.argv[1] == "start"):
             session = Session()
@@ -225,7 +237,6 @@ if __name__ == "__main__":
                     currentSessionInfo = json.load(file)
                     pauseTime = datetime.datetime.now()
                     currentSessionInfo["pauses"].append({"start": str(pauseTime), "finish": None})
-                    print(currentSessionInfo)
                     with open(".hiddenBotanist", "w") as file:
                         json.dump(currentSessionInfo, file)
                 print("You have paused your session. Come back when you feel ready. Based on your study duration, I recommend " + "-- 5 minutes break.")
@@ -266,7 +277,7 @@ if __name__ == "__main__":
                         # fill content 
                         for session in gardenInfo["sessions"]:
                             writer.writerow([session["date"], round(session["duration"]), session["description"]])
-                print(f"Exported {len(gardenInfo["sessions"])} sessions to exportedGarden.csv")
+                print(f"Exported {len(gardenInfo['sessions'])} sessions to exportedGarden.csv")
             else:
                 print("Data file does not exist. Start and finish a new session to create it.") 
         else:
