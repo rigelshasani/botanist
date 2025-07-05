@@ -192,7 +192,14 @@ if __name__ == "__main__":
                             obsidian_path = os.environ.get('BOTANIST_OBSIDIAN_PATH')
                             if obsidian_path:
                                 session.save_to_file(obsidian_path, sys.argv[2] if len(sys.argv) > 2 else "\n") 
-                            garden_dict = {"date" : session.start_time.strftime("%Y-%m-%d"), "duration": (session.finish_time - session.start_time).total_seconds() - pauseTime, "description" : sys.argv[2] if len(sys.argv) > 2 else "None provided.", "flower" : assign_flower((session.finish_time - session.start_time).total_seconds() - pauseTime)}
+                            garden_dict = {
+                                "date": session.start_time.strftime("%Y-%m-%d"), 
+                                "start_time": session.start_time.strftime("%Y-%m-%d %H:%M:%S"),
+                                "end_time": session.finish_time.strftime("%Y-%m-%d %H:%M:%S"),
+                                "duration": (session.finish_time - session.start_time).total_seconds() - pauseTime, 
+                                "description": sys.argv[2] if len(sys.argv) > 2 else "None provided.", 
+                                "flower": assign_flower((session.finish_time - session.start_time).total_seconds() - pauseTime)
+                                }
                             my_garden["sessions"].append(garden_dict)
                             with open(".hiddenGarden.json", "w") as file:
                                 json.dump(my_garden, file)
@@ -227,7 +234,11 @@ if __name__ == "__main__":
                     elif(j == "duration"):
                         seconds = i[j]
                         minutes = round(seconds/60)
-                        print(j + " : " + f"{minutes}")
+                        print(j + " : " + f"{minutes} minutes")
+                    elif(j == "start_time" or j == "end_time"):
+                        # Format times nicely for display
+                        time_obj = datetime.datetime.strptime(i[j], "%Y-%m-%d %H:%M:%S")
+                        print(j + " : " + time_obj.strftime("%a %m/%d %H:%M"))
                     else:
                         print(j + " : " + str(i[j]))
         # Pause time
@@ -273,10 +284,17 @@ if __name__ == "__main__":
                         # create writer object
                         writer = csv.writer(output)
                         # create headers
-                        writer.writerow(["date", "duration", "description"])
-                        # fill content 
+                        writer.writerow(["date", "start_time", "end_time", "duration_minutes", "description"])
                         for session in gardenInfo["sessions"]:
-                            writer.writerow([session["date"], round(session["duration"]), session["description"]])
+                            start_time = session.get("start_time", "N/A")
+                            end_time = session.get("end_time", "N/A")
+                            writer.writerow([
+                                session["date"], 
+                                start_time,
+                                end_time,
+                                round(session["duration"] / 60), 
+                                session["description"]
+                            ])
                 print(f"Exported {len(gardenInfo['sessions'])} sessions to exportedGarden.csv")
             else:
                 print("Data file does not exist. Start and finish a new session to create it.") 
