@@ -6,6 +6,9 @@ import json
 import datetime
 import random
 
+from collections import defaultdict
+import math
+
 class Session:
     def __init__(self):
         #define start_time with arbitrary value, as it will be overwritten
@@ -277,6 +280,63 @@ def calculate_total_pause_time(pauses):
             duration += (datetime.datetime.now() - datetime.datetime.strptime(pauses[i]["start"], "%Y-%m-%d %H:%M:%S.%f")).total_seconds()
     return duration
 
+def analyze_weekly_totals():
+
+    path = ".hiddenGarden.json"
+    if not os.path.exists(path):
+        print(f"{path} not found.")
+        return
+
+    with open(path, "r") as f:
+        raw = json.load(f)
+
+    sessions = raw.get("sessions", [])
+    if not sessions:
+        print("No valid sessions found in .hiddenGarden.json")
+        return
+
+    START_DATE = datetime.datetime(2025, 6, 20)
+    days = ["Friday", "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"]
+    weekly = defaultdict(lambda: defaultdict(lambda: {"hours": 0.0, "count": 0}))
+
+    for s in sessions:
+        try:
+            start = datetime.datetime.strptime(s["start_time"], "%Y-%m-%d %H:%M:%S")
+            duration = s["duration"] / 3600  # seconds to hours
+            delta_days = (start - START_DATE).days
+            if delta_days < 0:
+                continue
+            week_num = delta_days // 7 + 1
+            day_index = delta_days % 7
+            day_name = days[day_index]
+            weekly[week_num][day_name]["hours"] += duration
+            weekly[week_num][day_name]["count"] += 1
+        except Exception as e:
+            print("Skipping entry:", s)
+            print("Reason:", e)
+
+    total_hours = sum(sum(day["hours"] for day in week.values()) for week in weekly.values())
+    print(f"\nTotal hours across all weeks: {total_hours:.2f} h")
+
+
+    for week_num in sorted(weekly.keys()):
+        week = weekly[week_num]
+        week_total_hours = sum(day["hours"] for day in week.values())
+        week_total_sessions = sum(day["count"] for day in week.values())
+        print(f"\nWeek {week_num}:  {week_total_hours:.2f} h  across {week_total_sessions} session(s)")
+
+        base_date = START_DATE + datetime.timedelta(days=(week_num - 1) * 7)
+        for i, day in enumerate(days):
+            this_date = base_date + datetime.timedelta(days=i)
+            label = f"{day:<10} ({this_date.strftime('%b %d')})"
+            hours = week[day]["hours"]
+            count = week[day]["count"]
+            bar = "█" * int(hours * 2) if hours > 0 else ""
+            print(f"  {label}  {hours:>5.2f} h  {count}x  {bar}")
+
+
+    print(f"\nTotal hours across all weeks: {total_hours:.2f} h")
+
 if __name__ == "__main__":
     # code here runs when script is executed
     if(len(sys.argv) < 2 or len(sys.argv) > 3):
@@ -415,6 +475,10 @@ if __name__ == "__main__":
                         print("You cannot resume a session that is not paused.")
             else:
                 print("Cannot resume session that does not exist. Create one first.")
+
+        elif sys.argv[1] == "weekly":
+            analyze_weekly_totals()
+
 
         elif(sys.argv[1] == "export"):
             if os.path.exists(".hiddenGarden.json"):

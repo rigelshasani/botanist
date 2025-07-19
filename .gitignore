@@ -8,3 +8,5 @@ tests/
 *.csv
 .hiddenBotanist
 .hiddenGarden.json
+.hiddenGardenOriginal.json 
+merge_manual.py 
