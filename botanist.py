@@ -299,6 +299,7 @@ if __name__ == "__main__":
         elif(sys.argv[1] == "start"):
             if os.path.exists(".hiddenBotanist"):
                 print("Session already started. Use `finish` first.")
+                sys.exit()
             else:
                 session = Session()
                 session.start()
