@@ -297,15 +297,18 @@ if __name__ == "__main__":
             print_box(assign_flower(4000))
         # handle start case
         elif(sys.argv[1] == "start"):
-            session = Session()
-            session.start()
-            json_structure ={
-                                "session_start": str(session.start_time),
-                                "pauses": []
-                            }
-            with open(".hiddenBotanist", "w") as file:
-                json.dump(json_structure, file)
-            print(f"Session started at {session.start_time.strftime('%A %m/%d %H:%M:%S')}")
+            if os.path.exists(".hiddenBotanist"):
+                print("Session already started. Use `finish` first.")
+            else:
+                session = Session()
+                session.start()
+                json_structure ={
+                                    "session_start": str(session.start_time),
+                                    "pauses": []
+                                }
+                with open(".hiddenBotanist", "w") as file:
+                    json.dump(json_structure, file)
+                print(f"Session started at {session.start_time.strftime('%A %m/%d %H:%M:%S')}")
 
         # handle finish case
         elif(sys.argv[1] == "finish"):
