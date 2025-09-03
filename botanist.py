@@ -14,7 +14,7 @@ from botanist_pkg.session import Session
 from botanist_pkg.flowers import assign_flower
 from botanist_pkg.display import print_box, print_session_started, print_session_finished
 from botanist_pkg.analytics import calculate_total_pause_time, analyze_weekly_totals
-from botanist_pkg.garden import open_or_create_garden, export_garden_to_csv
+from botanist_pkg.garden import open_or_create_garden, export_garden_to_csv, add_session_safely
 from botanist_pkg.config import get_min_session_seconds, load_config, update_time_thresholds
 from botanist_pkg.utils import sanitize_description
 from botanist_pkg.goals import (display_daily_progress, display_weekly_progress, 
@@ -41,6 +41,7 @@ def main(argv=None):
         weekly: Show weekly productivity analysis
         config: Display current configuration
         goals: Show daily and weekly progress toward targets
+        verify: Check data integrity and list backups  
         test: Test flower display system
     """
     if argv is None:
@@ -122,25 +123,31 @@ def main(argv=None):
                         obsidian_path = os.environ.get('BOTANIST_OBSIDIAN_PATH')
                         if obsidian_path:
                             session.save_to_file(obsidian_path, clean_description) 
-                        garden_dict = {
+                        # Create new session data
+                        session_data = {
                             "date": session.start_time.strftime("%Y-%m-%d"), 
                             "start_time": session.start_time.strftime("%Y-%m-%d %H:%M:%S"),
                             "end_time": session.finish_time.strftime("%Y-%m-%d %H:%M:%S"),
                             "duration": (session.finish_time - session.start_time).total_seconds() - pauseTime, 
                             "description": clean_description, 
                             "flower": assign_flower((session.finish_time - session.start_time).total_seconds() - pauseTime)
-                            }
-                        my_garden["sessions"].append(garden_dict)
-                        with open(".hiddenGarden.json", "w") as file:
-                            json.dump(my_garden, file)
+                        }
+                        
+                        # Use safe append-only operation
+                        if add_session_safely(session_data):
+                            print("[DATA] Session saved safely with backup")
+                        else:
+                            print("[ERROR] Failed to save session data!")
+                            return
                         
                         # Show finish message with duration
                         session_duration_minutes = round(((session.finish_time - session.start_time).total_seconds() - pauseTime) / 60)
                         print_session_finished(session_duration_minutes)
                         print(f"Session saved and finished at {session.finish_time.strftime('%A %m/%d %H:%M:%S')}. Congrats on another session!")
                         
-                        # Check for goal achievements
-                        check_goal_achievements(my_garden["sessions"], show_celebrations=True)
+                        # Reload garden data and check for goal achievements
+                        updated_garden = open_or_create_garden()
+                        check_goal_achievements(updated_garden["sessions"], show_celebrations=True)
         #if it doesnt exist the session has not started
         else:
             print("Session needs to be started first!")
@@ -254,6 +261,16 @@ def main(argv=None):
         # Show today's and this week's progress
         display_daily_progress(sessions)
         display_weekly_progress(sessions)
+    
+    elif(cmd == "verify"):
+        from botanist_pkg.data_protection import verify_data_integrity, list_backups
+        print("╔════════════════════════════════════════╗")
+        print("║           DATA VERIFICATION            ║")
+        print("╚════════════════════════════════════════╝")
+        print()
+        verify_data_integrity()
+        print()
+        list_backups()
     
     else:
         print("Invalid argument.")

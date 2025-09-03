@@ -5,24 +5,22 @@ Garden data management for Botanist.
 import os
 import json
 import csv
+from .data_protection import safe_read_garden, safe_write_garden, append_session_only
 
 
 def open_or_create_garden():
-    """Load existing garden data or create a new garden file"""
-    # if the garden exists, load it
-    if os.path.exists(".hiddenGarden.json"):
-        with open(".hiddenGarden.json", "r") as file:
-            garden_data = json.load(file)
-            return garden_data
-    # if it doesn't, create it. 
-    else:
-        with open(".hiddenGarden.json", "w") as file:
-            garden_data = {
-                "current_streak": 0,
-                "sessions": []
-                }
-            json.dump(garden_data, file)
-            return garden_data
+    """Load existing garden data or create a new garden file using safe operations"""
+    return safe_read_garden()
+
+
+def save_garden_safely(garden_data):
+    """Save garden data using safe write operations with backup"""
+    return safe_write_garden(garden_data)
+
+
+def add_session_safely(new_session):
+    """Add a new session using append-only operation (safest method)"""
+    return append_session_only(new_session)
 
 
 def export_garden_to_csv():
