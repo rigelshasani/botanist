@@ -1,3 +1,10 @@
+"""
+Botanist - A CLI time tracker that grows an ASCII garden.
+
+Main module containing the command-line interface and core application logic.
+Tracks work sessions and rewards users with beautiful ASCII flowers based on duration.
+"""
+
 import sys
 import os
 import json
@@ -13,48 +20,79 @@ from botanist_pkg.utils import sanitize_description
 
 
 def main(argv=None):
+    """
+    Main entry point for Botanist CLI application.
+    
+    Processes command-line arguments and dispatches to appropriate functionality.
+    
+    Args:
+        argv (list, optional): Command line arguments. Uses sys.argv if None.
+        
+    Commands:
+        start: Begin a new work session
+        finish [description]: Complete current session with optional description
+        pause: Temporarily pause the current session
+        resume: Resume a paused session
+        status: Show current session status and progress
+        garden: Display all completed sessions
+        export: Export session data to CSV
+        weekly: Show weekly productivity analysis
+        config: Display current configuration
+        test: Test flower display system
+    """
     if argv is None:
         argv = sys.argv
 
+    # Validate command line arguments
     if len(argv) < 2 or len(argv) > 3:
         print("Sorry! Command invalid.")    
         return
+        
     cmd = argv[1]
+    
+    # Command: test - Display sample flowers for different durations
     if cmd == "test":
         print("Testing all flowers:\n")
         print("< 25 min:")
-        print_box(assign_flower(1000))
+        print_box(assign_flower(1000))  # 16.7 minutes
         if(cmd == "test"):
             print("Testing all flowers:\n")
             print("< 25 min:")
             print_box(assign_flower(1000))
             
             print("\n25-45 min:")
-            print_box(assign_flower(2000))
+            print_box(assign_flower(2000))  # 33.3 minutes
             
             print("\n45-60 min:")
-            print_box(assign_flower(3000))
+            print_box(assign_flower(3000))  # 50 minutes
             
             print("\n60+ min:")
-            print_box(assign_flower(4000))
-    # handle start case
+            print_box(assign_flower(4000))  # 66.7 minutes
+            
+    # Command: start - Begin a new work session
     elif(cmd == "start"):
+        # Check if session already in progress (prevent duplicates)
         if os.path.exists(".hiddenBotanist"):
             print("Session already started. Use `finish` first.")
             sys.exit()
         else:
+            # Create new session and record start time
             session = Session()
             session.start()
+            
+            # Create temporary session file to track active session
             json_structure ={
                                 "session_start": str(session.start_time),
-                                "pauses": []
+                                "pauses": []  # Track any pause/resume events
                             }
             with open(".hiddenBotanist", "w") as file:
                 json.dump(json_structure, file)
+                
+            # Display success message with ASCII art
             print_session_started()
             print(f"Session started at {session.start_time.strftime('%A %m/%d %H:%M:%S')}")
 
-    # handle finish case
+    # Command: finish - Complete current session and save to garden
     elif(cmd == "finish"):
         # if the file exists the session has started
         if os.path.exists(".hiddenBotanist"):

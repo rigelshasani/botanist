@@ -19,26 +19,44 @@ class Session:
         self.finish_time = datetime.datetime.now()
 
     def get_duration(self):
-        """Calculate and format the duration between start and finish times"""
-        # Calculate the difference
+        """
+        Calculate and format the duration between start and finish times.
+        
+        Performs rounding to nearest minute (30+ seconds rounds up).
+        Handles hour overflow when minutes round to 60.
+        
+        Returns:
+            str: Formatted duration string like "Sunday 22 -- 10:00-11:30 -- 1h 30m"
+        """
+        # Calculate the time difference in seconds
         time_diff = self.finish_time - self.start_time
         time_diff_seconds = time_diff.total_seconds()
-        # get full hours
+        
+        # Extract full hours
         time_diff_full_hours = time_diff_seconds // 3600
-        # get seconds left over using the modulo
+        
+        # Calculate remaining seconds after extracting hours
         seconds_left_over = time_diff_seconds % 3600
-        # convert to minutes left over
+        
+        # Convert remaining seconds to minutes
         minutes_left_over = seconds_left_over // 60
-        # get the final remaining seconds
+        
+        # Get final remaining seconds for rounding
         seconds_left_over = seconds_left_over - (minutes_left_over * 60)
+        
+        # Round to nearest minute (30+ seconds rounds up)
         if seconds_left_over >= 30:
             if minutes_left_over == 59:
+                # Handle overflow: 59 minutes + 1 = 1 hour
                 minutes_left_over = 0
                 time_diff_full_hours += 1
             else:
                 minutes_left_over += 1
+                
+        # Format date component
         date_str = self.start_time.strftime("%A %m/%d")
-        # this below will return -> [Sunday 22 -- 10:00-11:30 -- 1h 30m]
+        
+        # Return formatted duration string
         return f"{date_str} -- {int(self.start_time.hour):02}:{int(self.start_time.minute):02}-{int(self.finish_time.hour):02}:{int(self.finish_time.minute):02} -- {int(time_diff_full_hours):02}h {int(minutes_left_over):02}m"
     
     def format_for_obsidian(self, desc):
