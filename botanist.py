@@ -9,6 +9,7 @@ from botanist_pkg.display import print_box
 from botanist_pkg.analytics import calculate_total_pause_time, analyze_weekly_totals
 from botanist_pkg.garden import open_or_create_garden, export_garden_to_csv
 from botanist_pkg.config import get_min_session_seconds, load_config, update_time_thresholds
+from botanist_pkg.utils import sanitize_description
 
 
 def main(argv=None):
@@ -72,15 +73,19 @@ def main(argv=None):
                         print("Session will not be saved. Too short. Try harder.")
                     else:
                         my_garden = open_or_create_garden()
+                        # Sanitize description input
+                        raw_description = sys.argv[2] if len(sys.argv) > 2 else ""
+                        clean_description = sanitize_description(raw_description)
+                        
                         obsidian_path = os.environ.get('BOTANIST_OBSIDIAN_PATH')
                         if obsidian_path:
-                            session.save_to_file(obsidian_path, sys.argv[2] if len(sys.argv) > 2 else "\n") 
+                            session.save_to_file(obsidian_path, clean_description) 
                         garden_dict = {
                             "date": session.start_time.strftime("%Y-%m-%d"), 
                             "start_time": session.start_time.strftime("%Y-%m-%d %H:%M:%S"),
                             "end_time": session.finish_time.strftime("%Y-%m-%d %H:%M:%S"),
                             "duration": (session.finish_time - session.start_time).total_seconds() - pauseTime, 
-                            "description": sys.argv[2] if len(sys.argv) > 2 else "None provided.", 
+                            "description": clean_description, 
                             "flower": assign_flower((session.finish_time - session.start_time).total_seconds() - pauseTime)
                             }
                         my_garden["sessions"].append(garden_dict)
