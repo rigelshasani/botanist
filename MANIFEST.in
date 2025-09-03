@@ -1,0 +1,6 @@
+include README.md
+recursive-include botanist_pkg *.py
+prune screenshots
+exclude merge_manual.py
+exclude exportedGarden.csv
+exclude tests

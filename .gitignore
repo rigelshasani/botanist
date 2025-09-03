@@ -1,12 +1,39 @@
-__pycache__/
-*.pyc
-.DS_Store
+# Coverage / test artifacts
 .coverage
 htmlcov/
 .pytest_cache/
 tests/
+
+# CSV / data exports
 *.csv
+exportedGarden.csv
+
+# Hidden runtime/session files
 .hiddenBotanist
 .hiddenGarden.json
-.hiddenGardenOriginal.json 
-merge_manual.py 
+.hiddenGardenOriginal.json
+
+# Helper / standalone scripts not to track
+merge_manual.py
+
+# Build / packaging artifacts
+build/
+dist/
+*.egg-info/
+botanist.egg-info/
+.build/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Logs
+*.log
+
+# Virtual environments
+venv/
+.venv/
+.env/
+
+# OS junk
+.DS_Store

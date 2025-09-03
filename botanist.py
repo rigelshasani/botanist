@@ -8,6 +8,7 @@ from botanist_pkg.flowers import assign_flower
 from botanist_pkg.display import print_box
 from botanist_pkg.analytics import calculate_total_pause_time, analyze_weekly_totals
 from botanist_pkg.garden import open_or_create_garden, export_garden_to_csv
+from botanist_pkg.config import get_min_session_seconds, load_config, update_time_thresholds
 
 
 def main(argv=None):
@@ -66,7 +67,8 @@ def main(argv=None):
                     os.remove(".hiddenBotanist")
                     # cancel session if its short(testing or accidental)
                     pauseTime = calculate_total_pause_time(currentSessionInfo["pauses"])
-                    if (session.finish_time - session.start_time).total_seconds() - pauseTime < 30:
+                    min_session_time = get_min_session_seconds()
+                    if (session.finish_time - session.start_time).total_seconds() - pauseTime < min_session_time:
                         print("Session will not be saved. Too short. Try harder.")
                     else:
                         my_garden = open_or_create_garden()
@@ -161,6 +163,21 @@ def main(argv=None):
 
     elif(cmd == "export"):
         export_garden_to_csv()
+    
+    elif(cmd == "config"):
+        if len(argv) == 2:
+            # Show current configuration
+            config = load_config()
+            print("Current Configuration:")
+            print(f"  Seedling threshold: {config['time_thresholds']['seedling_minutes']} minutes")
+            print(f"  Bud threshold: {config['time_thresholds']['bud_minutes']} minutes") 
+            print(f"  Bloom threshold: {config['time_thresholds']['bloom_minutes']} minutes")
+            print(f"  Queen threshold: {config['time_thresholds']['queen_minutes']} minutes")
+            print(f"  Minimum session: {config['min_session_seconds']} seconds")
+        else:
+            print("Use 'config' to view current settings")
+            print("Configuration is stored in .botanist_config.json")
+    
     else:
         print("Invalid argument.")
 

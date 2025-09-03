@@ -3,6 +3,7 @@ Flower definitions and assignment logic for Botanist.
 """
 
 import random
+from .config import get_time_thresholds
 
 # Original flowers (keeping these as they are)
 SEEDLING = """_
@@ -111,18 +112,18 @@ QUEEN_OF_THE_NIGHT = """     .***.
 
 
 def assign_flower(duration, streak=0):
-    """Assign flower based on duration with Eastern theme"""
-    minutes = duration / 60
+    """Assign flower based on configurable duration thresholds"""
+    thresholds = get_time_thresholds()
     
-    # Keep original progression for short sessions
-    if minutes < 25:
+    # Use configurable thresholds instead of magic numbers
+    if duration < thresholds["seedling"]:
         return SEEDLING
-    elif minutes < 45:
+    elif duration < thresholds["bud"]:
         return BUD
-    elif minutes < 60:
+    elif duration < thresholds["bloom"]:
         return BLOOM
-    elif minutes < 120:
-        # For 60-120 minutes, randomly choose from Eastern flowers
+    elif duration < thresholds["queen"]:
+        # For middle-duration sessions, randomly choose from Eastern flowers
         eastern_flowers = [
             LOTUS_SMALL,
             LOTUS_MEDIUM,
@@ -137,7 +138,7 @@ def assign_flower(duration, streak=0):
         ]
         return random.choice(eastern_flowers)
     else:
-        # 2+ hours gets Queen of the Night
+        # Long sessions get Queen of the Night
         return QUEEN_OF_THE_NIGHT
 
 
