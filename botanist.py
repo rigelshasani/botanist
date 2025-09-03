@@ -17,6 +17,8 @@ from botanist_pkg.analytics import calculate_total_pause_time, analyze_weekly_to
 from botanist_pkg.garden import open_or_create_garden, export_garden_to_csv
 from botanist_pkg.config import get_min_session_seconds, load_config, update_time_thresholds
 from botanist_pkg.utils import sanitize_description
+from botanist_pkg.goals import (display_daily_progress, display_weekly_progress, 
+                               check_goal_achievements, set_weekly_goal)
 
 
 def main(argv=None):
@@ -38,6 +40,7 @@ def main(argv=None):
         export: Export session data to CSV
         weekly: Show weekly productivity analysis
         config: Display current configuration
+        goals: Show daily and weekly progress toward targets
         test: Test flower display system
     """
     if argv is None:
@@ -135,6 +138,9 @@ def main(argv=None):
                         session_duration_minutes = round(((session.finish_time - session.start_time).total_seconds() - pauseTime) / 60)
                         print_session_finished(session_duration_minutes)
                         print(f"Session saved and finished at {session.finish_time.strftime('%A %m/%d %H:%M:%S')}. Congrats on another session!")
+                        
+                        # Check for goal achievements
+                        check_goal_achievements(my_garden["sessions"], show_celebrations=True)
         #if it doesnt exist the session has not started
         else:
             print("Session needs to be started first!")
@@ -222,9 +228,32 @@ def main(argv=None):
             print(f"  Bloom threshold: {config['time_thresholds']['bloom_minutes']} minutes")
             print(f"  Queen threshold: {config['time_thresholds']['queen_minutes']} minutes")
             print(f"  Minimum session: {config['min_session_seconds']} seconds")
+            print()
+            from botanist_pkg.goals import display_goals_settings
+            display_goals_settings()
+        elif len(argv) == 3 and argv[2].startswith("weekly="):
+            # Set weekly goal
+            try:
+                hours = int(argv[2].split("=")[1])
+                minutes = hours * 60
+                if set_weekly_goal(minutes=minutes):
+                    print(f"Weekly goal set to {hours} hours ({minutes} minutes)")
+                else:
+                    print("Failed to set weekly goal")
+            except (ValueError, IndexError):
+                print("Usage: config weekly=HOURS")
         else:
-            print("Use 'config' to view current settings")
-            print("Configuration is stored in .botanist_config.json")
+            print("Usage:")
+            print("  config           - View current settings")
+            print("  config weekly=N  - Set weekly goal to N hours")
+    
+    elif(cmd == "goals"):
+        my_garden = open_or_create_garden()
+        sessions = my_garden.get("sessions", [])
+        
+        # Show today's and this week's progress
+        display_daily_progress(sessions)
+        display_weekly_progress(sessions)
     
     else:
         print("Invalid argument.")
