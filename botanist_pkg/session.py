@@ -49,19 +49,26 @@ class Session:
         """Save session to an Obsidian markdown file"""
         with open(filename, "r") as file:
             content = file.read()
-            # split file in strings
-            splitContent = content.split('\n')
-            #find last string before quick notes and add there
-            position = None
-            for i in range(0, len(splitContent)):
-                #handle case where it is found and where its not found
-                if splitContent[i] == "## Quick Notes":
-                    position = i
-
-            if position == None:
-                position = len(splitContent)-1
-            timeLog = self.format_for_obsidian(desc)
-            with open(filename, "w") as file:
-                splitContent.insert(position, timeLog)
-                joinedContent = '\n'.join(splitContent)
-                file.write(joinedContent)
+            
+        # Remove trailing newlines to prevent extra spacing
+        content = content.rstrip('\n')
+        splitContent = content.split('\n')
+        
+        # Find position before "## Quick Notes" or at the end
+        position = None
+        for i in range(0, len(splitContent)):
+            if splitContent[i] == "## Quick Notes":
+                position = i
+                break
+        
+        # If no "## Quick Notes" found, append to end
+        if position is None:
+            position = len(splitContent)
+        
+        timeLog = self.format_for_obsidian(desc)
+        splitContent.insert(position, timeLog)
+        
+        # Write back with single trailing newline
+        with open(filename, "w") as file:
+            joinedContent = '\n'.join(splitContent) + '\n'
+            file.write(joinedContent)
