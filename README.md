@@ -5,23 +5,43 @@
 
 # Botanist 🌱
 
-A command-line time tracker that rewards your focus with a growing ASCII garden.
+A command-line time tracker that rewards your focus with a growing ASCII garden featuring beautiful, artistic flowers.
 
 ## What is Botanist?
 
-Botanist gamifies time tracking by growing different flowers based on your session length. The longer you focus, the more beautiful your flower becomes. Bonus: sessions now support advanced analytics and rich integration with journaling tools like Obsidian.
+Botanist gamifies productivity by growing increasingly elaborate ASCII flowers based on your focus duration. From simple seedlings to cosmic legendary blooms, each session earns you visual rewards that reflect your dedication. Features advanced analytics, modular architecture, and seamless Obsidian integration.
 
 ## Features
 
-- ⏱️ Track work sessions with `start`, `pause`, `resume`, and `finish`
-- 🌼 Earn ASCII flowers based on focus duration
-- 🐛 Avoid duplicates via session collision checks
-- 🔍 Preview sessions before saving (dry run mode)
-- 📈 View weekly stats with `analyze`
-- 🪄 Merge sessions manually from `.csv` or `.json` with `merge_manual.py`
-- 📊 Export your data to CSV for custom analysis
-- 🌻 View your complete garden of completed sessions
-- 📝 Optional Obsidian integration
+**⏱️ Time Tracking**
+- Start, pause, resume, and finish work sessions
+- ASCII art feedback for session start/completion
+- Configurable time thresholds for flower rewards
+- Input sanitization for secure descriptions
+
+**🌸 Artistic Flower System** 
+- 20+ unique, symmetrical ASCII flowers
+- Progressive rarity: Eastern → Geometric → Mystical → Legendary
+- Ultimate "Universe Garden" for 3+ hour sessions
+- Beautiful visual rewards that scale with dedication
+
+**📊 Analytics & Insights**
+- Weekly productivity analysis with visual bars
+- Session export to CSV for custom analysis  
+- Complete garden view of all completed sessions
+- Duration tracking with pause/resume support
+
+**🛡️ Security & Reliability**
+- Input sanitization prevents injection attacks
+- Modular, maintainable codebase
+- Configurable settings stored in JSON
+- Comprehensive error handling
+
+**🔗 Integrations**
+- Seamless Obsidian markdown logging
+- Clean formatting without extra spacing
+- Environment-based configuration
+- Cross-platform compatibility
 
 ## Installation
 
@@ -33,14 +53,21 @@ cd botanist
 ## Usage
 
 ```bash
+# Basic Session Management
 python botanist.py start                          # Start tracking
 python botanist.py pause                          # Take a break
 python botanist.py resume                         # Resume working
 python botanist.py finish "Finished Python Drill" # Finish and save
+
+# Monitoring & Analysis  
 python botanist.py status                         # Check current session
 python botanist.py garden                         # View your garden
+python botanist.py weekly                         # Weekly productivity report
 python botanist.py export                         # Export to CSV
-python botanist.py weekly                        # Weekly report 
+
+# Configuration
+python botanist.py config                         # View current settings
+python botanist.py test                           # Test flower display
 ```
 
 ## Screenshots
@@ -63,73 +90,69 @@ python botanist.py weekly                        # Weekly report
 ---
 
 
-## 🌼 Flower Rewards
+## 🌼 Flower Progression System
 
-Each completed session plants a flower in your ASCII garden. The longer you focus, the more elaborate your flower can become.
+Botanist features a sophisticated flower reward system with 20+ unique, artistic flowers that become increasingly elaborate as your focus sessions grow longer. Each tier offers beautiful, symmetrical designs that serve as visual rewards for your dedication.
 
-However, there's also a touch of randomness—to keep your garden visually diverse and surprising. Even short sessions might bloom beautifully now and then, while long ones may grow humbler flowers, depending on the mood of the soil 🌱.
+### Progression Tiers
 
-### Examples of Possible Flowers
+**🌱 Basic (< 60 min)**
+- Seedling, Bud, Bloom - Simple, clean designs for shorter sessions
 
-**Seedling** (often < 25 minutes)
-```
-  _
- (_)
-  |
-```
+**🌸 Traditional Eastern (60-90 min)**  
+- Lotus varieties, Chrysanthemum, Plum Blossom, Cherry Blossom
+- Beautiful cultural flowers with perfect symmetry
 
-**Sprout**
-```
- (@)
-  |
-```
+**✨ Artistic Geometric (90-120 min)**
+- Mandala Flower, Crystal Bloom, Geometric Rose, Starburst
+- Complex mathematical patterns and artistic designs
 
-**Bud**
-```
- .-. 
-( + )
- |*|
-```
+**🔮 Mystical Rare (120-150 min)**
+- Phoenix Feather, Dragon Scale, Celestial Lotus, Infinity Bloom
+- Rare flowers featuring special Unicode symbols
 
-**Full Bloom**
-```
-        #%:.     
- #%=   ###%=:    
-##%=   |##%=:    
-##%=   ###%=:    
- #%%=  |##%=:    
- ##%== ###%=:    ===
-  ##%%=!##%=:    ====
-   ###%%##%=   :==== 
-    ######%=: .:==== 
-      ####%%======= 
-       ###%%%===: 
-       |%#%%=:=:  
-       ####%=:   
-       |##%%:    
--------####%:---=
-       |%#%%:    
-```
+**⚡ Legendary (150-180 min)**
+- World Tree, Cosmic Flower, Eternal Flame
+- Epic multi-line designs with grand titles
 
-**Specialty: Queen of the Night** (rare, for legendary focus)
+**🌌 Ultimate (180+ min)**
+- Universe Garden - The most elaborate cosmic flower for 3+ hour sessions
+
+### Example Flowers
+
+**Mandala Flower** (Geometric Tier)
 ```
-     .***.     
-   .*******.   
-  ***********  
- ************* 
-*************** 
- *************  
-  ***********   
-   *******.     
-     .***.     
+    .--*--.    
+  .*'     '*.  
+ *'  .---.  '*
+*   ( *** )   *
+|    '***'    |
+*   ( *** )   *
+ *. '-----' .*
+  '*.     .*'  
+    '--*--'    
        |       
-       |       
-═════════════════════
- Queen of the Night  
-═════════════════════
 ```
 
-These flowers are selected based on your session duration, but the garden rewards you with surprises—symbolizing that every session counts, and not every bloom looks the same.
+**Universe Garden** (Ultimate Tier)
+```
+           ✧ ★ ✦ ★ ✧           
+      ★ ✦ ✧ ◊ ◊ ◊ ✧ ✦ ★      
+   ✦ ◊ ◊ ◊ ◊ ◊ ◊ ◊ ◊ ◊ ✦   
+ ★ ◊ ◊ ◊ ◊ ◊◊◊ ◊ ◊ ◊ ◊ ★ 
+✧ ◊ ◊ ◊ ◊ ◊◊◊◊◊ ◊ ◊ ◊ ◊ ✧
+ ★ ◊ ◊ ◊ ◊◊◊***◊◊◊ ◊ ◊ ◊ ★
+✧ ◊ ◊ ◊ ◊ ◊◊◊◊◊ ◊ ◊ ◊ ◊ ✧
+ ★ ◊ ◊ ◊ ◊ ◊◊◊ ◊ ◊ ◊ ◊ ★ 
+   ✦ ◊ ◊ ◊ ◊ ◊ ◊ ◊ ◊ ◊ ✦   
+      ★ ✦ ✧ ◊ ◊ ◊ ✧ ✦ ★      
+           ✧ ★ ✦ ★ ✧           
+     =======================   
+        UNIVERSE GARDEN        
+     =======================   
+```
+
+The longer you focus, the cooler your flower becomes!
 
 ## Optional: Obsidian Integration
 
@@ -141,18 +164,39 @@ export BOTANIST_OBSIDIAN_PATH="/path/to/your/obsidian/file.md"
 
 Add this line to your `~/.zshrc`, `~/.bashrc`, or `~/.profile` to persist the setting.
 
-## Data Format
+## Configuration
 
-All sessions are stored in `.hiddenGarden.json` with the following structure:
+Botanist stores configuration in `.botanist_config.json`:
 
 ```json
 {
-  "date": "2025-07-18",
-  "start_time": "2025-07-18 10:22:12",
-  "end_time": "2025-07-18 12:28:28",
-  "duration": 7576.38,
-  "description": "None provided.",
-  "flower": "(ASCII flower or Unicode)"
+  "time_thresholds": {
+    "seedling_minutes": 25,
+    "bud_minutes": 45,
+    "bloom_minutes": 60,
+    "queen_minutes": 120
+  },
+  "min_session_seconds": 30
+}
+```
+
+Use `python botanist.py config` to view current settings.
+
+## Data Format
+
+Sessions are stored in `.hiddenGarden.json`:
+
+```json
+{
+  "current_streak": 0,
+  "sessions": [{
+    "date": "2025-07-18",
+    "start_time": "2025-07-18 10:22:12", 
+    "end_time": "2025-07-18 12:28:28",
+    "duration": 7576.38,
+    "description": "Python development",
+    "flower": "(Beautiful ASCII art flower)"
+  }]
 }
 ```
 
@@ -167,12 +211,36 @@ Week 4:  16.37 h
 Total hours across all weeks: 45.12 h
 ```
 
-## Coming Soon
+## Architecture
 
-- 📅 Monthly garden summary
-- 🔔 Notification system for session intervals
-- 📤 Cloud sync
+Botanist now features a clean, modular architecture:
+
+```
+botanist_pkg/
+├── session.py      # Session management and time tracking
+├── flowers.py      # Artistic flower definitions and assignment
+├── display.py      # ASCII art rendering and visual output
+├── analytics.py    # Weekly analysis and statistics
+├── garden.py       # Data persistence and CSV export
+├── config.py       # Configuration management
+└── utils.py        # Input sanitization and validation
+```
+
+## Security Features
+
+- **Input Sanitization**: All user descriptions are sanitized to prevent injection attacks
+- **Length Limits**: Descriptions limited to 200 characters to prevent abuse
+- **Safe Characters**: Only alphanumeric and common punctuation allowed
+- **Configuration Validation**: Time inputs validated within reasonable ranges
+
+## Contributing
+
+Botanist is built with security, modularity, and maintainability in mind. The codebase features:
+- Comprehensive documentation and inline comments
+- Modular design with clear separation of concerns  
+- Input validation and error handling
+- Configurable settings for customization
 
 ---
 
-Botanist was built to make your work bloom. Focus hard, and let your flowers speak for your dedication.
+**Botanist was built to make your work bloom. Focus hard, and let your flowers speak for your dedication.** 🌱✨
