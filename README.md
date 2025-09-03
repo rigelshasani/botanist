@@ -27,6 +27,7 @@ Botanist gamifies productivity by growing increasingly elaborate ASCII flowers b
 
 **📊 Analytics & Insights**
 - Weekly productivity analysis with visual bars
+- Daily and weekly goal tracking with progress visualization
 - Session export to CSV for custom analysis  
 - Complete garden view of all completed sessions
 - Duration tracking with pause/resume support
@@ -65,8 +66,10 @@ python botanist.py garden                         # View your garden
 python botanist.py weekly                         # Weekly productivity report
 python botanist.py export                         # Export to CSV
 
-# Configuration
-python botanist.py config                         # View current settings
+# Configuration & Goals
+python botanist.py config                         # View current settings  
+python botanist.py config weekly=25              # Set weekly goal to 25 hours
+python botanist.py goals                          # View daily/weekly progress
 python botanist.py test                           # Test flower display
 ```
 
@@ -180,7 +183,7 @@ Botanist stores configuration in `.botanist_config.json`:
 }
 ```
 
-Use `python botanist.py config` to view current settings.
+Use `python botanist.py config` to view current settings and `config weekly=N` to set weekly goals.
 
 ## Data Format
 
@@ -211,6 +214,34 @@ Week 4:  16.37 h
 Total hours across all weeks: 45.12 h
 ```
 
+## Goals System
+
+Track your productivity with weekly targets and visual progress bars:
+
+```
+╔════════════════════════════════════════╗
+║            TODAY'S PROGRESS            ║
+╚════════════════════════════════════════╝
+
+📅 2025-09-03
+⏱️  Focus Time: 271 minutes (4.5 hours)
+🎯 Sessions: 3 completed
+
+╔════════════════════════════════════════╗
+║           WEEKLY PROGRESS              ║
+╚════════════════════════════════════════╝
+
+📅 Week: 2025-09-01 to 2025-09-07
+
+⏱️  Focus Time: 827/1500 minutes (55%)
+   [████████████████░░░░░░░░░░░░░░] 💪
+
+🎯 Sessions: 12/15 completed (80%)
+   [████████████████████████░░░░░░] 🔥
+
+📈 Keep going! Need 673 more minutes and 3 more sessions.
+```
+
 ## Architecture
 
 Botanist now features a clean, modular architecture:
@@ -222,6 +253,7 @@ botanist_pkg/
 ├── display.py      # ASCII art rendering and visual output
 ├── analytics.py    # Weekly analysis and statistics
 ├── garden.py       # Data persistence and CSV export
+├── goals.py        # Weekly productivity goals and progress tracking
 ├── config.py       # Configuration management
 └── utils.py        # Input sanitization and validation
 ```
