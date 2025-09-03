@@ -5,7 +5,7 @@ import datetime
 
 from botanist_pkg.session import Session
 from botanist_pkg.flowers import assign_flower
-from botanist_pkg.display import print_box
+from botanist_pkg.display import print_box, print_session_started, print_session_finished
 from botanist_pkg.analytics import calculate_total_pause_time, analyze_weekly_totals
 from botanist_pkg.garden import open_or_create_garden, export_garden_to_csv
 from botanist_pkg.config import get_min_session_seconds, load_config, update_time_thresholds
@@ -51,6 +51,7 @@ def main(argv=None):
                             }
             with open(".hiddenBotanist", "w") as file:
                 json.dump(json_structure, file)
+            print_session_started()
             print(f"Session started at {session.start_time.strftime('%A %m/%d %H:%M:%S')}")
 
     # handle finish case
@@ -91,6 +92,10 @@ def main(argv=None):
                         my_garden["sessions"].append(garden_dict)
                         with open(".hiddenGarden.json", "w") as file:
                             json.dump(my_garden, file)
+                        
+                        # Show finish message with duration
+                        session_duration_minutes = round(((session.finish_time - session.start_time).total_seconds() - pauseTime) / 60)
+                        print_session_finished(session_duration_minutes)
                         print(f"Session saved and finished at {session.finish_time.strftime('%A %m/%d %H:%M:%S')}. Congrats on another session!")
         #if it doesnt exist the session has not started
         else:
