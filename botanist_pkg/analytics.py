@@ -37,22 +37,40 @@ def analyze_weekly_totals():
         print("No valid sessions found in .hiddenGarden.json")
         return
 
-    START_DATE = datetime.datetime(2025, 6, 20)
-    days = ["Friday", "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"]
+    # Historical Friday-based weeks (1-10)
+    FRIDAY_START_DATE = datetime.datetime(2025, 6, 20)
+    friday_days = ["Friday", "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"]
+    
+    # New Monday-based weeks (11+)
+    MONDAY_START_DATE = datetime.datetime(2025, 9, 1)  # Monday Sep 1st
+    monday_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    
     weekly = defaultdict(lambda: defaultdict(lambda: {"hours": 0.0, "count": 0}))
 
     for s in sessions:
         try:
             start = datetime.datetime.strptime(s["start_time"], "%Y-%m-%d %H:%M:%S")
             duration = s["duration"] / 3600  # seconds to hours
-            delta_days = (start - START_DATE).days
-            if delta_days < 0:
-                continue
-            week_num = delta_days // 7 + 1
-            day_index = delta_days % 7
-            day_name = days[day_index]
-            weekly[week_num][day_name]["hours"] += duration
-            weekly[week_num][day_name]["count"] += 1
+            
+            if start < MONDAY_START_DATE:
+                # Historical Friday-based weeks (1-10)
+                delta_days = (start - FRIDAY_START_DATE).days
+                if delta_days < 0:
+                    continue
+                week_num = delta_days // 7 + 1
+                day_index = delta_days % 7
+                day_name = friday_days[day_index]
+                weekly[week_num][day_name]["hours"] += duration
+                weekly[week_num][day_name]["count"] += 1
+            else:
+                # New Monday-based weeks (11+)
+                delta_days = (start - MONDAY_START_DATE).days
+                week_num = delta_days // 7 + 11  # Start numbering from Week 11
+                day_index = delta_days % 7
+                day_name = monday_days[day_index]
+                weekly[week_num][day_name]["hours"] += duration
+                weekly[week_num][day_name]["count"] += 1
+                
         except Exception as e:
             print("Skipping entry:", s)
             print("Reason:", e)
@@ -64,10 +82,19 @@ def analyze_weekly_totals():
         week = weekly[week_num]
         week_total_hours = sum(day["hours"] for day in week.values())
         week_total_sessions = sum(day["count"] for day in week.values())
-        print(f"\nWeek {week_num}:  {week_total_hours:.2f} h  across {week_total_sessions} session(s)")
+        
+        if week_num <= 10:
+            # Historical Friday-based weeks
+            print(f"\nWeek {week_num} (Fri-Thu):  {week_total_hours:.2f} h  across {week_total_sessions} session(s)")
+            base_date = FRIDAY_START_DATE + datetime.timedelta(days=(week_num - 1) * 7)
+            days_to_use = friday_days
+        else:
+            # New Monday-based weeks  
+            print(f"\nWeek {week_num} (Mon-Sun):  {week_total_hours:.2f} h  across {week_total_sessions} session(s)")
+            base_date = MONDAY_START_DATE + datetime.timedelta(days=(week_num - 11) * 7)
+            days_to_use = monday_days
 
-        base_date = START_DATE + datetime.timedelta(days=(week_num - 1) * 7)
-        for i, day in enumerate(days):
+        for i, day in enumerate(days_to_use):
             this_date = base_date + datetime.timedelta(days=i)
             label = f"{day:<10} ({this_date.strftime('%b %d')})"
             hours = week[day]["hours"]
