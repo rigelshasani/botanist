@@ -37,3 +37,6 @@ venv/
 
 # OS junk
 .DS_Store
+
+# Backup files
+.botanist_backups/
