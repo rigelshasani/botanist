@@ -4,6 +4,7 @@ Configuration management for Botanist.
 
 import json
 import os
+from .paths import config_file_for_read, config_file_for_write
 
 # Default configuration
 DEFAULT_CONFIG = {
@@ -17,21 +18,25 @@ DEFAULT_CONFIG = {
     "default_break_minutes": 5
 }
 
-CONFIG_FILE = ".botanist_config.json"
+def _config_file_for_read() -> str:
+    return str(config_file_for_read())
+
+def _config_file_for_write() -> str:
+    return str(config_file_for_write())
 
 
 def load_config():
     """Load configuration from file or return defaults"""
-    if os.path.exists(CONFIG_FILE):
+    if os.path.exists(_config_file_for_read()):
         try:
-            with open(CONFIG_FILE, "r") as f:
+            with open(_config_file_for_read(), "r") as f:
                 user_config = json.load(f)
                 # Merge with defaults to ensure all keys exist
                 config = DEFAULT_CONFIG.copy()
                 config.update(user_config)
                 return config
         except (json.JSONDecodeError, IOError):
-            print(f"Warning: Could not load {CONFIG_FILE}, using defaults")
+            print(f"Warning: Could not load config file, using defaults")
     
     return DEFAULT_CONFIG.copy()
 
@@ -39,7 +44,7 @@ def load_config():
 def save_config(config):
     """Save configuration to file"""
     try:
-        with open(CONFIG_FILE, "w") as f:
+        with open(_config_file_for_write(), "w") as f:
             json.dump(config, f, indent=2)
         return True
     except IOError as e:

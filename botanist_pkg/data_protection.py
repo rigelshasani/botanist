@@ -8,10 +8,21 @@ import os
 import shutil
 import datetime
 from typing import Dict, List, Any
+from .paths import (
+    garden_file_for_read,
+    garden_file_for_write,
+    backup_dir_for_use,
+)
 
 
-GARDEN_FILE = ".hiddenGarden.json"
-BACKUP_DIR = ".botanist_backups"
+def _garden_file_current() -> str:
+    return str(garden_file_for_write())
+
+def _garden_file_for_read() -> str:
+    return str(garden_file_for_read())
+
+def _backup_dir_current() -> str:
+    return str(backup_dir_for_use())
 MAX_BACKUPS = 30  # Keep 30 backup files
 
 
@@ -20,21 +31,22 @@ def create_backup():
     Create a timestamped backup of the garden file.
     Called before any write operation to ensure data safety.
     """
-    if not os.path.exists(GARDEN_FILE):
+    if not os.path.exists(_garden_file_for_read()):
         return  # Nothing to backup
     
     # Create backup directory if it doesn't exist
-    if not os.path.exists(BACKUP_DIR):
-        os.makedirs(BACKUP_DIR)
+    backup_dir = _backup_dir_current()
+    if not os.path.exists(backup_dir):
+        os.makedirs(backup_dir)
     
     # Create timestamped backup filename
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_filename = f"garden_backup_{timestamp}.json"
-    backup_path = os.path.join(BACKUP_DIR, backup_filename)
+    backup_path = os.path.join(backup_dir, backup_filename)
     
     # Copy the current file to backup
     try:
-        shutil.copy2(GARDEN_FILE, backup_path)
+        shutil.copy2(_garden_file_for_read(), backup_path)
         print(f"[BACKUP] Created: {backup_filename}")
     except IOError as e:
         print(f"[WARNING] Failed to create backup: {e}")
@@ -45,15 +57,16 @@ def create_backup():
 
 def cleanup_old_backups():
     """Remove old backup files, keeping only the most recent MAX_BACKUPS."""
-    if not os.path.exists(BACKUP_DIR):
+    backup_dir = _backup_dir_current()
+    if not os.path.exists(backup_dir):
         return
     
     try:
         # Get all backup files
         backup_files = []
-        for filename in os.listdir(BACKUP_DIR):
+        for filename in os.listdir(backup_dir):
             if filename.startswith("garden_backup_") and filename.endswith(".json"):
-                filepath = os.path.join(BACKUP_DIR, filename)
+                filepath = os.path.join(backup_dir, filename)
                 mtime = os.path.getmtime(filepath)
                 backup_files.append((mtime, filepath, filename))
         
@@ -175,14 +188,14 @@ def safe_write_garden(data: Dict[str, Any]) -> bool:
     create_backup()
     
     # Write to temporary file first
-    temp_file = GARDEN_FILE + ".tmp"
+    temp_file = _garden_file_current() + ".tmp"
     try:
         with open(temp_file, "w") as f:
             json.dump(data, f, indent=2)
         
         # Atomically replace the original file
         if os.path.exists(temp_file):
-            shutil.move(temp_file, GARDEN_FILE)
+            shutil.move(temp_file, _garden_file_current())
             return True
     except (IOError, TypeError, ValueError) as e:
         print(f"[ERROR] Failed to write garden data: {e}")
@@ -201,7 +214,7 @@ def safe_read_garden() -> Dict[str, Any]:
     Returns:
         dict: Garden data or default structure if file is corrupted
     """
-    if not os.path.exists(GARDEN_FILE):
+    if not os.path.exists(_garden_file_for_read()):
         # Return default structure
         return {
             "current_streak": 0,
@@ -209,7 +222,7 @@ def safe_read_garden() -> Dict[str, Any]:
         }
     
     try:
-        with open(GARDEN_FILE, "r") as f:
+        with open(_garden_file_for_read(), "r") as f:
             data = json.load(f)
         
         # Validate the loaded data
@@ -231,16 +244,17 @@ def try_restore_from_backup() -> Dict[str, Any]:
     Returns:
         dict: Restored data or default structure if no valid backup
     """
-    if not os.path.exists(BACKUP_DIR):
+    backup_dir = _backup_dir_current()
+    if not os.path.exists(backup_dir):
         print("[WARNING] No backups available, using default structure")
         return {"current_streak": 0, "sessions": []}
     
     try:
         # Get all backup files
         backup_files = []
-        for filename in os.listdir(BACKUP_DIR):
+        for filename in os.listdir(backup_dir):
             if filename.startswith("garden_backup_") and filename.endswith(".json"):
-                filepath = os.path.join(BACKUP_DIR, filename)
+                filepath = os.path.join(backup_dir, filename)
                 mtime = os.path.getmtime(filepath)
                 backup_files.append((mtime, filepath, filename))
         
@@ -256,7 +270,7 @@ def try_restore_from_backup() -> Dict[str, Any]:
                 if validate_garden_data(data):
                     print(f"[RECOVERY] Restored from backup: {filename}")
                     # Write the recovered data back to main file
-                    with open(GARDEN_FILE, "w") as f:
+                    with open(_garden_file_current(), "w") as f:
                         json.dump(data, f, indent=2)
                     return data
             except (IOError, json.JSONDecodeError):
@@ -298,15 +312,16 @@ def append_session_only(new_session: Dict[str, Any]) -> bool:
 
 def list_backups():
     """List all available backup files."""
-    if not os.path.exists(BACKUP_DIR):
+    backup_dir = _backup_dir_current()
+    if not os.path.exists(backup_dir):
         print("No backups found.")
         return
     
     try:
         backup_files = []
-        for filename in os.listdir(BACKUP_DIR):
+        for filename in os.listdir(backup_dir):
             if filename.startswith("garden_backup_") and filename.endswith(".json"):
-                filepath = os.path.join(BACKUP_DIR, filename)
+                filepath = os.path.join(backup_dir, filename)
                 mtime = os.path.getmtime(filepath)
                 size = os.path.getsize(filepath)
                 backup_files.append((mtime, filepath, filename, size))
