@@ -182,10 +182,16 @@ def main(argv=None):
                 pauseTime = calculate_total_pause_time(currentSessionInfo["pauses"])
                 duration = (datetime.datetime.now() - start_time).total_seconds() - pauseTime
                 flower = assign_flower(duration)
-                if(duration < 60.0):
-                    print(f"Session: {round(duration + pauseTime)} seconds ({round(duration)} seconds working, {round(pauseTime)} seconds paused)")
+                if duration < 60.0:
+                    total_secs = int(round(duration + pauseTime))
+                    work_secs = int(round(duration))
+                    pause_secs = int(round(pauseTime))
+                    print(f"Session: {total_secs} seconds ({work_secs} seconds working, {pause_secs} seconds paused)")
                 else:
-                    print(f"Session: {(duration + pauseTime) // 60 } minutes ({duration // 60} minutes working, {pauseTime // 60} minutes paused)")
+                    total_min = int((duration + pauseTime) // 60)
+                    work_min = int(duration // 60)
+                    pause_min = int(pauseTime // 60)
+                    print(f"Session: {total_min} minutes ({work_min} minutes working, {pause_min} minutes paused)")
                 print_box(flower)
         else:
             print("Cannot show status of inexistent session. Create session first.")
@@ -242,7 +248,8 @@ def main(argv=None):
                         currentSessionInfo["pauses"][-1]["finish"] = str(resumeTime)
                         with open(active_session_file_for_write(), "w") as file:
                             json.dump(currentSessionInfo, file)
-                        print(f"You successfully unpaused. You were away for {round(pauseDuration.total_seconds() // 60)} minutes. Keep working!")
+                        away_min = int(pauseDuration.total_seconds() // 60)
+                        print(f"You successfully unpaused. You were away for {away_min} minutes. Keep working!")
                     else:
                         print("You cannot resume a session you have not paused first.")
                 else:
