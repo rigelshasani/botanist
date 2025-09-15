@@ -48,6 +48,8 @@ def main(argv=None):
     sub.add_parser("verify")
     sub.add_parser("delete")
     sub.add_parser("test")
+    # Missing parser caused documented `goals` command to error
+    sub.add_parser("goals")
 
     p_finish = sub.add_parser("finish")
     p_finish.add_argument("description", nargs="?", default="", help="Optional session description")
