@@ -9,6 +9,8 @@ import sys
 import os
 import json
 import datetime
+import argparse
+from pathlib import Path
 
 from botanist_pkg.session import Session
 from botanist_pkg.flowers import assign_flower
@@ -19,44 +21,51 @@ from botanist_pkg.config import get_min_session_seconds, load_config, update_tim
 from botanist_pkg.utils import sanitize_description
 from botanist_pkg.goals import (display_daily_progress, display_weekly_progress, 
                                check_goal_achievements, set_weekly_goal)
+from botanist_pkg.paths import (
+    active_session_file_for_read,
+    active_session_file_for_write,
+)
 
 
 def main(argv=None):
     """
-    Main entry point for Botanist CLI application.
-    
-    Processes command-line arguments and dispatches to appropriate functionality.
-    
-    Args:
-        argv (list, optional): Command line arguments. Uses sys.argv if None.
-        
-    Commands:
-        start: Begin a new work session
-        finish [description]: Complete current session with optional description
-        pause: Temporarily pause the current session
-        resume: Resume a paused session
-        status: Show current session status and progress
-        garden: Display all completed sessions
-        export: Export session data to CSV
-        weekly: Show weekly productivity analysis
-        config: Display current configuration
-        goals: Show daily and weekly progress toward targets
-        verify: Check data integrity and list backups  
-        delete: Delete the last session (active and/or most recent completed)
-        test: Test flower display system
+    Main entry for Botanist CLI with argparse subcommands.
+    Preserves legacy forms like `config weekly=25` and `finish <desc>`.
     """
     if argv is None:
         argv = sys.argv
 
-    # Validate command line arguments
-    if len(argv) < 2 or len(argv) > 3:
-        print("Sorry! Command invalid.")    
+    parser = argparse.ArgumentParser(prog="botanist", add_help=True)
+    sub = parser.add_subparsers(dest="command")
+
+    sub.add_parser("start")
+    sub.add_parser("pause")
+    sub.add_parser("resume")
+    sub.add_parser("status")
+    sub.add_parser("garden")
+    sub.add_parser("weekly")
+    sub.add_parser("export")
+    sub.add_parser("verify")
+    sub.add_parser("delete")
+    sub.add_parser("test")
+
+    p_finish = sub.add_parser("finish")
+    p_finish.add_argument("description", nargs="?", default="", help="Optional session description")
+    p_finish.add_argument("--desc", "-d", dest="desc", default=None, help="Optional session description")
+
+    p_config = sub.add_parser("config")
+    # Legacy support: positional token like weekly=25
+    p_config.add_argument("param", nargs="?", default=None)
+    # Preferred new form
+    p_config.add_argument("--weekly", type=int, dest="weekly_hours", help="Set weekly goal (hours)")
+
+    args = parser.parse_args(argv[1:])
+    if not args.command:
+        parser.print_help()
         return
-        
-    cmd = argv[1]
-    
+
     # Command: test - Display sample flowers for different durations
-    if cmd == "test":
+    if args.command == "test":
         print("Testing all flowers:\n")
         print("< 25 min:")
         print_box(assign_flower(1000))  # ~16.7 minutes
@@ -68,9 +77,9 @@ def main(argv=None):
         print_box(assign_flower(4000))  # ~66.7 minutes
             
     # Command: start - Begin a new work session
-    elif(cmd == "start"):
+    elif(args.command == "start"):
         # Check if session already in progress (prevent duplicates)
-        if os.path.exists(".hiddenBotanist"):
+        if active_session_file_for_read().exists():
             print("Session already started. Use `finish` first.")
             sys.exit()
         else:
@@ -83,7 +92,7 @@ def main(argv=None):
                                 "session_start": str(session.start_time),
                                 "pauses": []  # Track any pause/resume events
                             }
-            with open(".hiddenBotanist", "w") as file:
+            with open(active_session_file_for_write(), "w") as file:
                 json.dump(json_structure, file)
                 
             # Display success message with ASCII art
@@ -91,11 +100,11 @@ def main(argv=None):
             print(f"Session started at {session.start_time.strftime('%A %m/%d %H:%M:%S')}")
 
     # Command: finish - Complete current session and save to garden
-    elif(cmd == "finish"):
+    elif(args.command == "finish"):
         # if the file exists the session has started
-        if os.path.exists(".hiddenBotanist"):
+        if active_session_file_for_read().exists():
             session = Session()
-            with open(".hiddenBotanist", "r") as file:
+            with open(active_session_file_for_read(), "r") as file:
                 currentSessionInfo = json.load(file)
                 session.start_time = datetime.datetime.strptime(currentSessionInfo["session_start"], "%Y-%m-%d %H:%M:%S.%f")
                 if currentSessionInfo["pauses"] and currentSessionInfo["pauses"][-1]["finish"] is None:
@@ -109,13 +118,15 @@ def main(argv=None):
                         print("Session will not be saved. Too short. Try harder.")
                         # Remove active session marker only after decision
                         try:
-                            os.remove(".hiddenBotanist")
-                        except FileNotFoundError:
+                            p = active_session_file_for_read()
+                            if p.exists():
+                                p.unlink()
+                        except Exception:
                             pass
                     else:
                         my_garden = open_or_create_garden()
                         # Sanitize description input
-                        raw_description = argv[2] if len(argv) > 2 else ""
+                        raw_description = args.desc if args.desc is not None else args.description
                         clean_description = sanitize_description(raw_description)
                         
                         obsidian_path = os.environ.get('BOTANIST_OBSIDIAN_PATH')
@@ -140,8 +151,10 @@ def main(argv=None):
                             print("[DATA] Session saved safely with backup")
                             # Remove active session marker after successful save
                             try:
-                                os.remove(".hiddenBotanist")
-                            except FileNotFoundError:
+                                p = active_session_file_for_read()
+                                if p.exists():
+                                    p.unlink()
+                            except Exception:
                                 pass
                         else:
                             print("[ERROR] Failed to save session data!")
@@ -159,9 +172,9 @@ def main(argv=None):
         else:
             print("Session needs to be started first!")
     # handle everything else
-    elif(cmd == "status"):
-        if os.path.exists(".hiddenBotanist"):
-            with open(".hiddenBotanist", "r") as file:
+    elif(args.command == "status"):
+        if active_session_file_for_read().exists():
+            with open(active_session_file_for_read(), "r") as file:
                 currentSessionInfo = json.load(file)
                 start_time = datetime.datetime.strptime(currentSessionInfo["session_start"], "%Y-%m-%d %H:%M:%S.%f")
                 pauseTime = calculate_total_pause_time(currentSessionInfo["pauses"])
@@ -175,7 +188,7 @@ def main(argv=None):
         else:
             print("Cannot show status of inexistent session. Create session first.")
     # Garden time!
-    elif(cmd == "garden"):
+    elif(args.command == "garden"):
         my_garden = open_or_create_garden()
         print("Your current streak is: " + str(my_garden["current_streak"]) + " days.")
         for i in my_garden["sessions"]:
@@ -193,21 +206,30 @@ def main(argv=None):
                 else:
                     print(j + " : " + str(i[j]))
     # Pause time
-    elif(cmd == "pause"):
-        if os.path.exists(".hiddenBotanist"):
-            with open(".hiddenBotanist", "r") as file:
+    elif(args.command == "pause"):
+        if active_session_file_for_read().exists():
+            with open(active_session_file_for_read(), "r") as file:
                 currentSessionInfo = json.load(file)
                 pauseTime = datetime.datetime.now()
                 currentSessionInfo["pauses"].append({"start": str(pauseTime), "finish": None})
-                with open(".hiddenBotanist", "w") as file:
+                with open(active_session_file_for_write(), "w") as file:
                     json.dump(currentSessionInfo, file)
-            print("You have paused your session. Come back when you feel ready. Based on your study duration, I recommend " + "-- 5 minutes break.")
+            # Use configured default break length for suggestion
+            try:
+                cfg = load_config()
+                break_minutes = int(cfg.get("default_break_minutes", 5))
+            except Exception:
+                break_minutes = 5
+            print(
+                "You have paused your session. Come back when you feel ready. "
+                f"Based on your study duration, I recommend -- {break_minutes} minutes break."
+            )
         else:
             print("Session needs to be started first!")
     
-    elif(cmd == "resume"):
-        if os.path.exists(".hiddenBotanist"):
-            with open(".hiddenBotanist", "r") as file:
+    elif(args.command == "resume"):
+        if active_session_file_for_read().exists():
+            with open(active_session_file_for_read(), "r") as file:
                 currentSessionInfo = json.load(file)
                 if currentSessionInfo["pauses"]: # empty lists are false in python
                     if(currentSessionInfo["pauses"][-1]["finish"] is None):
@@ -216,7 +238,7 @@ def main(argv=None):
                         start_time = datetime.datetime.strptime(pauseTime, "%Y-%m-%d %H:%M:%S.%f")
                         pauseDuration = resumeTime - start_time
                         currentSessionInfo["pauses"][-1]["finish"] = str(resumeTime)
-                        with open(".hiddenBotanist", "w") as file:
+                        with open(active_session_file_for_write(), "w") as file:
                             json.dump(currentSessionInfo, file)
                         print(f"You successfully unpaused. You were away for {round(pauseDuration.total_seconds() // 60)} minutes. Keep working!")
                     else:
@@ -226,14 +248,14 @@ def main(argv=None):
         else:
             print("Cannot resume session that does not exist. Create one first.")
 
-    elif cmd == "weekly":
+    elif args.command == "weekly":
         analyze_weekly_totals()
 
-    elif(cmd == "export"):
+    elif(args.command == "export"):
         export_garden_to_csv()
     
-    elif(cmd == "config"):
-        if len(argv) == 2:
+    elif(args.command == "config"):
+        if args.weekly_hours is None and not args.param:
             # Show current configuration
             config = load_config()
             print("Current Configuration:")
@@ -245,10 +267,10 @@ def main(argv=None):
             print()
             from botanist_pkg.goals import display_goals_settings
             display_goals_settings()
-        elif len(argv) == 3 and argv[2].startswith("weekly="):
+        elif args.param and isinstance(args.param, str) and args.param.startswith("weekly="):
             # Set weekly goal
             try:
-                hours = int(argv[2].split("=")[1])
+                hours = int(args.param.split("=")[1])
                 minutes = hours * 60
                 if set_weekly_goal(minutes=minutes):
                     print(f"Weekly goal set to {hours} hours ({minutes} minutes)")
@@ -256,12 +278,20 @@ def main(argv=None):
                     print("Failed to set weekly goal")
             except (ValueError, IndexError):
                 print("Usage: config weekly=HOURS")
+        elif args.weekly_hours is not None:
+            hours = args.weekly_hours
+            minutes = hours * 60
+            if set_weekly_goal(minutes=minutes):
+                print(f"Weekly goal set to {hours} hours ({minutes} minutes)")
+            else:
+                print("Failed to set weekly goal")
         else:
             print("Usage:")
             print("  config           - View current settings")
             print("  config weekly=N  - Set weekly goal to N hours")
+            print("  config --weekly N - Set weekly goal to N hours (preferred)")
     
-    elif(cmd == "goals"):
+    elif(args.command == "goals"):
         my_garden = open_or_create_garden()
         sessions = my_garden.get("sessions", [])
         
@@ -269,7 +299,7 @@ def main(argv=None):
         display_daily_progress(sessions)
         display_weekly_progress(sessions)
     
-    elif(cmd == "verify"):
+    elif(args.command == "verify"):
         from botanist_pkg.data_protection import verify_data_integrity, list_backups
         print("╔════════════════════════════════════════╗")
         print("║           DATA VERIFICATION            ║")
@@ -279,7 +309,7 @@ def main(argv=None):
         print()
         list_backups()
     
-    elif(cmd == "delete"):
+    elif(args.command == "delete"):
         delete_last_session()
     
     else:

@@ -59,6 +59,7 @@ python botanist.py start                          # Start tracking
 python botanist.py pause                          # Take a break
 python botanist.py resume                         # Resume working
 python botanist.py finish "Finished Python Drill" # Finish and save
+# or: python botanist.py finish -d "Finished Python Drill"
 
 # Monitoring & Analysis  
 python botanist.py status                         # Check current session
