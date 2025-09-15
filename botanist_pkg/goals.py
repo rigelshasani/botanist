@@ -6,14 +6,18 @@ import json
 import os
 import datetime
 from collections import defaultdict
+from .paths import goals_file_for_read, goals_file_for_write
 
 
-GOALS_FILE = ".botanist_goals.json"
+def _goals_file_for_read() -> str:
+    return str(goals_file_for_read())
+
+def _goals_file_for_write() -> str:
+    return str(goals_file_for_write())
 
 DEFAULT_GOALS = {
     "weekly": {
-        "target_minutes": 1500,  # 25 hours default  
-        "target_sessions": 15,
+        "target_minutes": 1500,  # 25 hours default
         "enabled": True
     }
 }
@@ -21,9 +25,9 @@ DEFAULT_GOALS = {
 
 def load_goals():
     """Load goals from file or return defaults."""
-    if os.path.exists(GOALS_FILE):
+    if os.path.exists(_goals_file_for_read()):
         try:
-            with open(GOALS_FILE, "r") as f:
+            with open(_goals_file_for_read(), "r") as f:
                 goals = json.load(f)
                 # Merge with defaults to ensure all keys exist
                 merged_goals = DEFAULT_GOALS.copy()
@@ -32,7 +36,7 @@ def load_goals():
                         merged_goals[key].update(goals[key])
                 return merged_goals
         except (json.JSONDecodeError, IOError):
-            print(f"Warning: Could not load {GOALS_FILE}, using defaults")
+            print(f"Warning: Could not load goals file, using defaults")
     
     return DEFAULT_GOALS.copy()
 
@@ -40,7 +44,7 @@ def load_goals():
 def save_goals(goals):
     """Save goals to file."""
     try:
-        with open(GOALS_FILE, "w") as f:
+        with open(_goals_file_for_write(), "w") as f:
             json.dump(goals, f, indent=2)
         return True
     except IOError as e:
@@ -50,8 +54,8 @@ def save_goals(goals):
 
 
 
-def set_weekly_goal(minutes=None, sessions=None):
-    """Set weekly productivity goals."""
+def set_weekly_goal(minutes=None):
+    """Set weekly time goal in minutes."""
     goals = load_goals()
     
     if minutes is not None:
@@ -59,13 +63,6 @@ def set_weekly_goal(minutes=None, sessions=None):
             goals["weekly"]["target_minutes"] = minutes
         else:
             print("Weekly minutes goal must be between 60 and 3360 (56 hours)")
-            return False
-            
-    if sessions is not None:
-        if 3 <= sessions <= 140:
-            goals["weekly"]["target_sessions"] = sessions
-        else:
-            print("Weekly sessions goal must be between 3 and 140")
             return False
     
     return save_goals(goals)
@@ -151,48 +148,37 @@ def display_daily_progress(sessions, target_date=None):
 
 
 def display_weekly_progress(sessions, target_week=None):
-    """Display weekly goal progress with detailed breakdown."""
+    """Display weekly time goal progress with detailed breakdown."""
     goals = load_goals()
-    if not goals["weekly"]["enabled"]:
-        print("Weekly goals are disabled. Use 'goals weekly --enable' to activate.")
-        return
-        
     progress = calculate_weekly_progress(sessions, target_week)
     weekly_goals = goals["weekly"]
-    
-    # Calculate progress percentages
-    minutes_progress = (progress["minutes"] / weekly_goals["target_minutes"]) * 100
-    sessions_progress = (progress["sessions"] / weekly_goals["target_sessions"]) * 100
-    
+
+    # Calculate progress percentage for minutes only
+    minutes_progress = (progress["minutes"] / max(1, weekly_goals["target_minutes"])) * 100
+
     print("╔════════════════════════════════════════╗")
     print("║           WEEKLY PROGRESS              ║")
     print("╚════════════════════════════════════════╝")
     print()
     print(f"📅 Week: {progress['week_start']} to {progress['week_end']}")
     print()
-    
+
     # Minutes progress bar
     print(f"⏱️  Focus Time: {progress['minutes']}/{weekly_goals['target_minutes']} minutes ({minutes_progress:.0f}%)")
     minutes_bar = create_progress_bar(minutes_progress)
     print(f"   {minutes_bar}")
     print()
-    
-    # Sessions progress bar
-    print(f"🎯 Sessions: {progress['sessions']}/{weekly_goals['target_sessions']} completed ({sessions_progress:.0f}%)")
-    sessions_bar = create_progress_bar(sessions_progress)
-    print(f"   {sessions_bar}")
-    print()
-    
+
     # Daily breakdown
     if progress["daily_breakdown"]:
         print("Daily Breakdown:")
         week_start = datetime.datetime.strptime(progress["week_start"], "%Y-%m-%d").date()
-        
+
         for i in range(7):
             current_day = week_start + datetime.timedelta(days=i)
             date_str = current_day.strftime("%Y-%m-%d")
             day_name = current_day.strftime("%A")
-            
+
             if date_str in progress["daily_breakdown"]:
                 day_data = progress["daily_breakdown"][date_str]
                 minutes = round(day_data["minutes"])
@@ -201,20 +187,15 @@ def display_weekly_progress(sessions, target_week=None):
                 print(f"  {day_name:<9} {minutes:>3}m {sessions}s {bar}")
             else:
                 print(f"  {day_name:<9}   0m 0s")
-    
+
     print()
-    
-    # Achievement status
-    if minutes_progress >= 100 and sessions_progress >= 100:
-        print("🏆 Weekly goals achieved! Outstanding dedication!")
-    elif minutes_progress >= 100:
-        print("✅ Time goal achieved! Complete more sessions to hit session target.")  
-    elif sessions_progress >= 100:
-        print("✅ Session goal achieved! Focus longer to hit time target.")
+
+    # Achievement status (minutes-only)
+    if minutes_progress >= 100:
+        print("🏆 Weekly time goal achieved! Outstanding dedication!")
     else:
         remaining_minutes = max(0, weekly_goals["target_minutes"] - progress["minutes"])
-        remaining_sessions = max(0, weekly_goals["target_sessions"] - progress["sessions"])
-        print(f"📈 Keep going! Need {remaining_minutes} more minutes and {remaining_sessions} more sessions.")
+        print(f"📈 Keep going! Need {remaining_minutes} more minutes.")
     print()
 
 
@@ -245,20 +226,19 @@ def display_goals_settings():
 
 
 def check_goal_achievements(sessions, show_celebrations=True):
-    """Check if weekly goals were achieved and show celebrations."""
+    """Check if weekly time goal was achieved and show celebrations."""
     goals = load_goals()
     achievements = []
     
     # Check weekly goals
-    if goals["weekly"]["enabled"]:
+    if goals["weekly"].get("enabled", True):
         progress = calculate_weekly_progress(sessions)
         weekly_goals = goals["weekly"]
-        
-        minutes_achieved = progress["minutes"] >= weekly_goals["target_minutes"] 
-        sessions_achieved = progress["sessions"] >= weekly_goals["target_sessions"]
-        
-        if minutes_achieved and sessions_achieved:
-            achievements.append("🏆 Weekly goals completed!")
+
+        minutes_achieved = progress["minutes"] >= weekly_goals["target_minutes"]
+
+        if minutes_achieved:
+            achievements.append("🏆 Weekly time goal achieved!")
     
     # Show achievements
     if achievements and show_celebrations:

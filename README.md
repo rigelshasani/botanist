@@ -236,10 +236,7 @@ Track your productivity with weekly targets and visual progress bars:
 ⏱️  Focus Time: 827/1500 minutes (55%)
    [████████████████░░░░░░░░░░░░░░] 💪
 
-🎯 Sessions: 12/15 completed (80%)
-   [████████████████████████░░░░░░] 🔥
-
-📈 Keep going! Need 673 more minutes and 3 more sessions.
+📈 Keep going! Need 673 more minutes.
 ```
 
 ## Architecture
