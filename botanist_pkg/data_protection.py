@@ -184,7 +184,7 @@ def safe_write_garden(data: Dict[str, Any]) -> bool:
         if os.path.exists(temp_file):
             shutil.move(temp_file, GARDEN_FILE)
             return True
-    except (IOError, json.JSONEncodeError) as e:
+    except (IOError, TypeError, ValueError) as e:
         print(f"[ERROR] Failed to write garden data: {e}")
         # Clean up temp file
         if os.path.exists(temp_file):
