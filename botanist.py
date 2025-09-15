@@ -109,21 +109,29 @@ def main(argv=None):
                     print("You are currently paused. Cannot finish session without unpausing.")
                 else:
                     session.finish()
-                    os.remove(".hiddenBotanist")
                     # cancel session if its short(testing or accidental)
                     pauseTime = calculate_total_pause_time(currentSessionInfo["pauses"])
                     min_session_time = get_min_session_seconds()
                     if (session.finish_time - session.start_time).total_seconds() - pauseTime < min_session_time:
                         print("Session will not be saved. Too short. Try harder.")
+                        # Remove active session marker only after decision
+                        try:
+                            os.remove(".hiddenBotanist")
+                        except FileNotFoundError:
+                            pass
                     else:
                         my_garden = open_or_create_garden()
                         # Sanitize description input
-                        raw_description = sys.argv[2] if len(sys.argv) > 2 else ""
+                        raw_description = argv[2] if len(argv) > 2 else ""
                         clean_description = sanitize_description(raw_description)
                         
                         obsidian_path = os.environ.get('BOTANIST_OBSIDIAN_PATH')
                         if obsidian_path:
-                            session.save_to_file(obsidian_path, clean_description) 
+                            # Attempt Obsidian write, but don't block saving
+                            try:
+                                session.save_to_file(obsidian_path, clean_description)
+                            except Exception as e:
+                                print(f"[WARNING] Failed to write to Obsidian file: {e}")
                         # Create new session data
                         session_data = {
                             "date": session.start_time.strftime("%Y-%m-%d"), 
@@ -137,6 +145,11 @@ def main(argv=None):
                         # Use safe append-only operation
                         if add_session_safely(session_data):
                             print("[DATA] Session saved safely with backup")
+                            # Remove active session marker after successful save
+                            try:
+                                os.remove(".hiddenBotanist")
+                            except FileNotFoundError:
+                                pass
                         else:
                             print("[ERROR] Failed to save session data!")
                             return
