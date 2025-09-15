@@ -6,6 +6,7 @@ import os
 import json
 import csv
 from .data_protection import safe_read_garden, safe_write_garden, append_session_only
+from .paths import active_session_file_for_read
 
 
 def open_or_create_garden():
@@ -35,7 +36,7 @@ def delete_last_session():
         bool: True if any deletion occurred, False if nothing to delete
     """
     # Check what would be deleted
-    active_session_exists = os.path.exists(".hiddenBotanist")
+    active_session_exists = active_session_file_for_read().exists()
     garden_data = safe_read_garden()
     has_completed_sessions = (garden_data and "sessions" in garden_data and garden_data["sessions"])
     
@@ -50,7 +51,7 @@ def delete_last_session():
     print()
     
     if active_session_exists:
-        print("• Active session (.hiddenBotanist) will be deleted")
+        print("• Active session will be deleted")
     
     if has_completed_sessions:
         last_session = garden_data["sessions"][-1]
@@ -75,8 +76,13 @@ def delete_last_session():
     
     # Step 1: Remove temporary session file if it exists
     if active_session_exists:
-        os.remove(".hiddenBotanist")
-        print("[DELETED] Removed active session (.hiddenBotanist)")
+        try:
+            p = active_session_file_for_read()
+            if p.exists():
+                p.unlink()
+        except Exception:
+            pass
+        print("[DELETED] Removed active session")
         deleted_something = True
     
     # Step 2: Remove last session from garden data if it exists
@@ -105,7 +111,8 @@ def export_garden_to_csv():
         print("No sessions to export. Start and finish a new session to create data.")
         return
 
-    with open("exportedGarden.csv", "w") as output:
+    # Use newline='' for csv on Windows and explicit UTF-8 encoding
+    with open("exportedGarden.csv", "w", newline='', encoding='utf-8') as output:
         writer = csv.writer(output)
         writer.writerow(["date", "start_time", "end_time", "duration_minutes", "description"])
         for session in sessions:
