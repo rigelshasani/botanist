@@ -1,3 +1,14 @@
+"""
+LEGACY MODULE (deprecated)
+---------------------------------
+This file contains the original monolithic implementation of Botanist.
+It is retained for historical reference only and is NOT used by the
+current CLI entry point (which uses the modular botanist_pkg package).
+
+Do not import or modify this file for new features. All active code
+paths live under botanist_pkg/ and botanist.py.
+"""
+
 import sys
 import os
 
