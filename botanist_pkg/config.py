@@ -4,7 +4,9 @@ Configuration management for Botanist.
 
 import json
 import os
+import copy
 from .paths import config_file_for_read, config_file_for_write
+from .utils import validate_time_input
 
 # Default configuration
 DEFAULT_CONFIG = {
@@ -25,20 +27,90 @@ def _config_file_for_write() -> str:
     return str(config_file_for_write())
 
 
+def _coerce_minutes(value, default_minutes):
+    """Coerce a possibly-invalid minute value into a sane integer within 1..1440."""
+    try:
+        # try direct int first
+        iv = int(value)
+        if 1 <= iv <= 1440:
+            return iv
+    except Exception:
+        pass
+    # fall back to validator that accepts strings
+    ok, val = validate_time_input(str(value))
+    if ok and val is not None:
+        return val
+    return default_minutes
+
+
 def load_config():
-    """Load configuration from file or return defaults"""
+    """Load configuration from file, deep-merge defaults, and validate values."""
+    base = copy.deepcopy(DEFAULT_CONFIG)
+
     if os.path.exists(_config_file_for_read()):
         try:
             with open(_config_file_for_read(), "r") as f:
                 user_config = json.load(f)
-                # Merge with defaults to ensure all keys exist
-                config = DEFAULT_CONFIG.copy()
-                config.update(user_config)
-                return config
         except (json.JSONDecodeError, IOError):
-            print(f"Warning: Could not load config file, using defaults")
-    
-    return DEFAULT_CONFIG.copy()
+            print("Warning: Could not load config file, using defaults")
+            return base
+
+        # Deep-merge time_thresholds
+        user_tt = {}
+        if isinstance(user_config, dict):
+            user_tt = user_config.get("time_thresholds", {}) or {}
+
+            # Merge known top-level keys
+            for k in ("min_session_seconds", "default_break_minutes"):
+                if k in user_config:
+                    base[k] = user_config[k]
+
+        merged_tt = base["time_thresholds"].copy()
+        if isinstance(user_tt, dict):
+            merged_tt.update({k: v for k, v in user_tt.items() if k in merged_tt})
+
+        # Validate/coerce minute thresholds
+        sm = _coerce_minutes(merged_tt.get("seedling_minutes"), DEFAULT_CONFIG["time_thresholds"]["seedling_minutes"])
+        bm = _coerce_minutes(merged_tt.get("bud_minutes"), DEFAULT_CONFIG["time_thresholds"]["bud_minutes"])
+        blm = _coerce_minutes(merged_tt.get("bloom_minutes"), DEFAULT_CONFIG["time_thresholds"]["bloom_minutes"])
+        qm = _coerce_minutes(merged_tt.get("queen_minutes"), DEFAULT_CONFIG["time_thresholds"]["queen_minutes"])
+
+        # Ensure monotonic increase: seedling < bud < bloom < queen
+        if not (sm < bm < blm < qm):
+            print("Warning: Invalid time thresholds order in config; adjusting to monotonic increasing values")
+            bm = max(bm, sm + 1)
+            blm = max(blm, bm + 1)
+            qm = max(qm, blm + 1)
+            # Cap to 1440
+            bm = min(bm, 1440)
+            blm = min(blm, 1440)
+            qm = min(qm, 1440)
+
+        base["time_thresholds"] = {
+            "seedling_minutes": sm,
+            "bud_minutes": bm,
+            "bloom_minutes": blm,
+            "queen_minutes": qm,
+        }
+
+        # Validate top-level numeric fields with basic bounds
+        try:
+            ms = int(base.get("min_session_seconds", DEFAULT_CONFIG["min_session_seconds"]))
+            if ms < 1 or ms > 24 * 3600:
+                raise ValueError
+            base["min_session_seconds"] = ms
+        except Exception:
+            base["min_session_seconds"] = DEFAULT_CONFIG["min_session_seconds"]
+
+        try:
+            db = int(base.get("default_break_minutes", DEFAULT_CONFIG.get("default_break_minutes", 5)))
+            if db < 1 or db > 180:
+                raise ValueError
+            base["default_break_minutes"] = db
+        except Exception:
+            base["default_break_minutes"] = DEFAULT_CONFIG.get("default_break_minutes", 5)
+
+    return base
 
 
 def save_config(config):
