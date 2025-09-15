@@ -6,6 +6,7 @@ import os
 import json
 import datetime
 from collections import defaultdict
+from .data_protection import safe_read_garden
 
 
 def calculate_total_pause_time(pauses):
@@ -24,17 +25,11 @@ def calculate_total_pause_time(pauses):
 
 def analyze_weekly_totals():
     """Analyze and display weekly productivity statistics"""
-    path = ".hiddenGarden.json"
-    if not os.path.exists(path):
-        print(f"{path} not found.")
-        return
-
-    with open(path, "r") as f:
-        raw = json.load(f)
+    raw = safe_read_garden()
 
     sessions = raw.get("sessions", [])
     if not sessions:
-        print("No valid sessions found in .hiddenGarden.json")
+        print("No valid sessions found")
         return
 
     # Historical Friday-based weeks (1-10)
@@ -76,7 +71,6 @@ def analyze_weekly_totals():
             print("Reason:", e)
 
     total_hours = sum(sum(day["hours"] for day in week.values()) for week in weekly.values())
-    print(f"\nTotal hours across all weeks: {total_hours:.2f} h")
 
     for week_num in sorted(weekly.keys()):
         week = weekly[week_num]
