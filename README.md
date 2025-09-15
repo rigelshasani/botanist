@@ -68,7 +68,8 @@ python botanist.py export                         # Export to CSV
 
 # Configuration & Goals
 python botanist.py config                         # View current settings  
-python botanist.py config weekly=25              # Set weekly goal to 25 hours
+python botanist.py config weekly=25              # Set weekly goal to 25 hours (legacy form)
+python botanist.py config --weekly 25            # Preferred form
 python botanist.py goals                          # View daily/weekly progress
 python botanist.py test                           # Test flower display
 ```
@@ -169,7 +170,10 @@ Add this line to your `~/.zshrc`, `~/.bashrc`, or `~/.profile` to persist the se
 
 ## Configuration
 
-Botanist stores configuration in `.botanist_config.json`:
+Botanist stores configuration in your user data folder (per-platform):
+- macOS: `~/Library/Application Support/Botanist/config.json`
+- Linux: `$XDG_DATA_HOME/botanist/config.json` or `~/.local/share/botanist/config.json`
+- Windows: `%APPDATA%\Botanist\config.json`
 
 ```json
 {
@@ -183,11 +187,11 @@ Botanist stores configuration in `.botanist_config.json`:
 }
 ```
 
-Use `python botanist.py config` to view current settings and `config weekly=N` to set weekly goals.
+Use `python botanist.py config` to view current settings and `config weekly=N` to set a weekly time goal (hours).
 
 ## Data Format
 
-Sessions are stored in `.hiddenGarden.json`:
+Sessions are stored in the user data folder (see above) in `garden.json`:
 
 ```json
 {
