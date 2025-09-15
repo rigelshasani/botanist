@@ -2,7 +2,6 @@
 .coverage
 htmlcov/
 .pytest_cache/
-tests/
 
 # CSV / data exports
 *.csv
