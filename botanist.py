@@ -59,20 +59,13 @@ def main(argv=None):
     if cmd == "test":
         print("Testing all flowers:\n")
         print("< 25 min:")
-        print_box(assign_flower(1000))  # 16.7 minutes
-        if(cmd == "test"):
-            print("Testing all flowers:\n")
-            print("< 25 min:")
-            print_box(assign_flower(1000))
-            
-            print("\n25-45 min:")
-            print_box(assign_flower(2000))  # 33.3 minutes
-            
-            print("\n45-60 min:")
-            print_box(assign_flower(3000))  # 50 minutes
-            
-            print("\n60+ min:")
-            print_box(assign_flower(4000))  # 66.7 minutes
+        print_box(assign_flower(1000))  # ~16.7 minutes
+        print("\n25-45 min:")
+        print_box(assign_flower(2000))  # ~33.3 minutes
+        print("\n45-60 min:")
+        print_box(assign_flower(3000))  # ~50 minutes
+        print("\n60+ min:")
+        print_box(assign_flower(4000))  # ~66.7 minutes
             
     # Command: start - Begin a new work session
     elif(cmd == "start"):
