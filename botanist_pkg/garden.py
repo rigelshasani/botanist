@@ -98,26 +98,24 @@ def delete_last_session():
 
 
 def export_garden_to_csv():
-    """Export garden data to CSV format"""
-    if os.path.exists(".hiddenGarden.json"):
-        with open(".hiddenGarden.json", "r") as file:
-            gardenInfo = json.load(file)
-            # create output file
-            with open("exportedGarden.csv", "w") as output:
-                # create writer object
-                writer = csv.writer(output)
-                # create headers
-                writer.writerow(["date", "start_time", "end_time", "duration_minutes", "description"])
-                for session in gardenInfo["sessions"]:
-                    start_time = session.get("start_time", "N/A")
-                    end_time = session.get("end_time", "N/A")
-                    writer.writerow([
-                        session["date"], 
-                        start_time,
-                        end_time,
-                        round(session["duration"] / 60), 
-                        session["description"]
-                    ])
-        print(f"Exported {len(gardenInfo['sessions'])} sessions to exportedGarden.csv")
-    else:
-        print("Data file does not exist. Start and finish a new session to create it.")
+    """Export garden data to CSV format using safe read"""
+    gardenInfo = safe_read_garden()
+    sessions = gardenInfo.get("sessions", [])
+    if not sessions:
+        print("No sessions to export. Start and finish a new session to create data.")
+        return
+
+    with open("exportedGarden.csv", "w") as output:
+        writer = csv.writer(output)
+        writer.writerow(["date", "start_time", "end_time", "duration_minutes", "description"])
+        for session in sessions:
+            start_time = session.get("start_time", "N/A")
+            end_time = session.get("end_time", "N/A")
+            writer.writerow([
+                session.get("date", "N/A"),
+                start_time,
+                end_time,
+                round(session.get("duration", 0) / 60),
+                session.get("description", "")
+            ])
+    print(f"Exported {len(sessions)} sessions to exportedGarden.csv")
