@@ -2,7 +2,6 @@
 Analytics and reporting functionality for Botanist.
 """
 
-import os
 import json
 import datetime
 from collections import defaultdict

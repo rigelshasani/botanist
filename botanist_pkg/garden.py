@@ -2,8 +2,6 @@
 Garden data management for Botanist.
 """
 
-import os
-import json
 import csv
 from .data_protection import safe_read_garden, safe_write_garden, append_session_only
 from .paths import active_session_file_for_read

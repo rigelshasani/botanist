@@ -17,7 +17,7 @@ from botanist_pkg.flowers import assign_flower
 from botanist_pkg.display import print_box, print_session_started, print_session_finished
 from botanist_pkg.analytics import calculate_total_pause_time, analyze_weekly_totals
 from botanist_pkg.garden import open_or_create_garden, export_garden_to_csv, add_session_safely, delete_last_session
-from botanist_pkg.config import get_min_session_seconds, load_config, update_time_thresholds
+from botanist_pkg.config import get_min_session_seconds, load_config
 from botanist_pkg.utils import sanitize_description
 from botanist_pkg.goals import (display_daily_progress, display_weekly_progress, 
                                check_goal_achievements, set_weekly_goal)
