@@ -27,7 +27,7 @@ def load_goals():
     """Load goals from file or return defaults."""
     if os.path.exists(_goals_file_for_read()):
         try:
-            with open(_goals_file_for_read(), "r") as f:
+            with open(_goals_file_for_read(), "r", encoding="utf-8") as f:
                 goals = json.load(f)
                 # Merge with defaults to ensure all keys exist
                 merged_goals = DEFAULT_GOALS.copy()
@@ -44,7 +44,7 @@ def load_goals():
 def save_goals(goals):
     """Save goals to file."""
     try:
-        with open(_goals_file_for_write(), "w") as f:
+        with open(_goals_file_for_write(), "w", encoding="utf-8") as f:
             json.dump(goals, f, indent=2)
         return True
     except IOError as e:

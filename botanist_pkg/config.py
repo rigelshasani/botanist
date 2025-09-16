@@ -49,7 +49,7 @@ def load_config():
 
     if os.path.exists(_config_file_for_read()):
         try:
-            with open(_config_file_for_read(), "r") as f:
+            with open(_config_file_for_read(), "r", encoding="utf-8") as f:
                 user_config = json.load(f)
         except (json.JSONDecodeError, IOError):
             print("Warning: Could not load config file, using defaults")
@@ -116,7 +116,7 @@ def load_config():
 def save_config(config):
     """Save configuration to file"""
     try:
-        with open(_config_file_for_write(), "w") as f:
+        with open(_config_file_for_write(), "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
         return True
     except IOError as e:

@@ -190,7 +190,7 @@ def safe_write_garden(data: Dict[str, Any]) -> bool:
     # Write to temporary file first
     temp_file = _garden_file_current() + ".tmp"
     try:
-        with open(temp_file, "w") as f:
+        with open(temp_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
         
         # Atomically replace the original file
@@ -222,7 +222,7 @@ def safe_read_garden() -> Dict[str, Any]:
         }
     
     try:
-        with open(_garden_file_for_read(), "r") as f:
+        with open(_garden_file_for_read(), "r", encoding="utf-8") as f:
             data = json.load(f)
         
         # Validate the loaded data
@@ -264,13 +264,13 @@ def try_restore_from_backup() -> Dict[str, Any]:
         # Try to restore from each backup (newest first)
         for mtime, filepath, filename in backup_files:
             try:
-                with open(filepath, "r") as f:
+                with open(filepath, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 
                 if validate_garden_data(data):
                     print(f"[RECOVERY] Restored from backup: {filename}")
                     # Write the recovered data back to main file
-                    with open(_garden_file_current(), "w") as f:
+                    with open(_garden_file_current(), "w", encoding="utf-8") as f:
                         json.dump(data, f, indent=2)
                     return data
             except (IOError, json.JSONDecodeError):
