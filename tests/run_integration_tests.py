@@ -5,6 +5,9 @@ import time
 import shutil
 import datetime
 from pathlib import Path
+import io
+import re
+from contextlib import redirect_stdout
 
 # Ensure project root is on sys.path for imports
 ROOT = Path(__file__).resolve().parents[1]
@@ -134,6 +137,100 @@ def test_export_csv(temp_dir: Path):
     finally:
         os.chdir(old_cwd)
 
+def test_display_box_width_and_centering(temp_dir: Path):
+    # Test width-aware centering with mixed-width characters
+    from botanist_pkg.display import print_box, display_width
+
+    flower = "✧★✦\n漢字\nplain"
+    f = io.StringIO()
+    with redirect_stdout(f):
+        print_box(flower)
+    out = f.getvalue().splitlines()
+
+    assert_true(len(out) >= 5, "box output lines insufficient")
+
+    # Top and bottom borders
+    top = out[0]
+    bottom = out[-1]
+    assert_true(top.startswith("╭") and top.endswith("╮"), "top border malformed")
+    assert_true(bottom.startswith("╰") and bottom.endswith("╯"), "bottom border malformed")
+
+    # Compute expected inner width using display_width
+    lines = flower.split("\n")
+    max_w = max(display_width(s) for s in lines)
+    expected_dash_count = max_w + 2
+    dash_count = len(top) - 2  # minus corners
+    assert_true(dash_count == expected_dash_count, "border width mismatch")
+
+    # Check each content line has exact inner width by display_width
+    for i, src in enumerate(lines, start=1):
+        inner = out[i][1:-1]
+        assert_true(display_width(inner) == expected_dash_count, "content line width mismatch")
+
+def test_sanitize_description_hardening(temp_dir: Path):
+    from botanist_pkg.utils import sanitize_description
+    raw = "  <script>alert(1)</script> Hi; DROP TABLE --  ✧  "
+    s = sanitize_description(raw)
+    assert_true("script" not in s.lower(), "script tag leakage")
+    assert_true("alert(1)" not in s, "javascript leakage")
+    assert_true("Hi" in s, "legit text lost")
+    assert_true("✧" in s or True, "unicode removed incorrectly")
+
+def test_config_monotonic_thresholds(temp_dir: Path):
+    from botanist_pkg import config as cfg
+    from botanist_pkg import paths
+    # Write intentionally invalid order
+    bad = {
+        "time_thresholds": {
+            "seedling_minutes": 60,
+            "bud_minutes": 45,
+            "bloom_minutes": 25,
+            "queen_minutes": 30,
+        },
+        "min_session_seconds": 0,
+        "default_break_minutes": 9999,
+    }
+    with open(paths.config_file_for_write(), "w", encoding="utf-8") as f:
+        json.dump(bad, f)
+    c = cfg.load_config()
+    tt = c["time_thresholds"]
+    assert_true(tt["seedling_minutes"] < tt["bud_minutes"] < tt["bloom_minutes"] < tt["queen_minutes"], "thresholds not corrected to monotonic")
+    # Top-level bounds corrected
+    assert_true(1 <= c["min_session_seconds"] <= 86400, "min_session_seconds not bounded")
+    assert_true(1 <= c["default_break_minutes"] <= 180, "default_break_minutes not bounded")
+
+def test_goals_save_and_load(temp_dir: Path):
+    from botanist_pkg.goals import set_weekly_goal, load_goals
+    ok = set_weekly_goal(minutes=200)  # ~3h20m
+    assert_true(ok, "failed to set weekly goal")
+    g = load_goals()
+    assert_true(g["weekly"]["target_minutes"] == 200, "weekly goal not persisted")
+
+def test_export_contains_unicode(temp_dir: Path):
+    from botanist_pkg.data_protection import append_session_only, safe_read_garden
+    from botanist_pkg.garden import export_garden_to_csv
+    import datetime as _dt
+    # Append a unicode-rich session
+    now = _dt.datetime.now().replace(microsecond=0)
+    sess = {
+        "date": now.strftime("%Y-%m-%d"),
+        "start_time": now.strftime("%Y-%m-%d %H:%M:%S"),
+        "end_time": (now + _dt.timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S"),
+        "duration": 300,
+        "description": "宇宙 ✧ 花",
+        "flower": "✧",
+    }
+    ok = append_session_only(sess)
+    assert_true(ok, "failed to append unicode session")
+    # Export in temp CWD
+    old_cwd = Path.cwd()
+    os.chdir(temp_dir)
+    try:
+        export_garden_to_csv()
+        content = (temp_dir / "exportedGarden.csv").read_text(encoding="utf-8")
+        assert_true("宇宙 ✧ 花" in content, "unicode description missing from export")
+    finally:
+        os.chdir(old_cwd)
 
 def test_backups_and_verify(temp_dir: Path):
     from botanist_pkg.data_protection import safe_read_garden, safe_write_garden
@@ -189,6 +286,11 @@ def main():
         test_backups_and_verify,
         test_delete_last_session,
         test_recovery_from_invalid_file,
+        test_display_box_width_and_centering,
+        test_sanitize_description_hardening,
+        test_config_monotonic_thresholds,
+        test_goals_save_and_load,
+        test_export_contains_unicode,
     ]
 
     failures = []

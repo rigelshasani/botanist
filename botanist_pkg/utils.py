@@ -28,6 +28,18 @@ def sanitize_description(description):
     if not description:
         return "None provided."
 
+    # First, remove dangerous patterns (before stripping symbols like < >)
+    dangerous_patterns = [
+        r"<script.*?</script>",          # HTML script blocks
+        r"script\s*.*?/\s*script",      # bracketless 'script.../script'
+        r"javascript\s*:",
+        r"data\s*:",
+        r"vbscript\s*:",
+        r"on\w+\s*=",                   # inline event handlers
+    ]
+    for pattern in dangerous_patterns:
+        description = re.sub(pattern, "", description, flags=re.IGNORECASE | re.DOTALL)
+
     # Remove potentially dangerous characters and control characters
     # Keep alphanumeric, spaces, and common punctuation
     description = SAFE_DESC_RE.sub('', description)
@@ -40,16 +52,8 @@ def sanitize_description(description):
     if len(description) > max_length:
         description = description[:max_length].rstrip() + "..."
 
-    # Prevent injection-style patterns
-    dangerous_patterns = [
-        r"<script.*?</script>",
-        r"javascript:",
-        r"data:",
-        r"vbscript:",
-        r"on\w+\s*=",
-    ]
-
-    for pattern in dangerous_patterns:
+    # Final pass: strip any lingering protocol/event tokens (defense-in-depth)
+    for pattern in (r"javascript\s*:", r"data\s*:", r"vbscript\s*:", r"on\w+\s*="):
         description = re.sub(pattern, "", description, flags=re.IGNORECASE)
 
     return description
@@ -72,4 +76,3 @@ def validate_time_input(time_str):
         return True, value
     except (ValueError, TypeError):
         return False, None
-

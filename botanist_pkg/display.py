@@ -1,5 +1,6 @@
 """
 Display utilities for Botanist ASCII art and formatting.
+Includes width-aware centering that handles wide Unicode.
 """
 
 SESSION_STARTED = """
@@ -24,6 +25,41 @@ FINISHED = """
 |_|   |___|_| \_|___|____/|_| |_|_____|____/ 
 """
 
+import unicodedata
+
+def display_width(text: str) -> int:
+    """Compute display cell width for text, approximating wcwidth.
+
+    - Treat combining marks and certain format chars (e.g., ZWJ) as width 0
+    - Treat East Asian Wide/Fullwidth as width 2
+    - Everything else width 1
+    """
+    w = 0
+    for ch in text:
+        # Zero-width if combining or control/format joiner
+        if unicodedata.combining(ch):
+            continue
+        cat = unicodedata.category(ch)
+        if cat in ("Cf",):  # format (ZWJ, etc.)
+            continue
+        ea = unicodedata.east_asian_width(ch)
+        if ea in ("W", "F"):
+            w += 2
+        else:
+            w += 1
+    return w
+
+
+def pad_center_by_width(text: str, target_width: int, fillchar: str = " ") -> str:
+    """Center text to a target display width using spaces."""
+    cur = display_width(text)
+    if cur >= target_width:
+        return text
+    total_pad = target_width - cur
+    left = total_pad // 2
+    right = total_pad - left
+    return (fillchar * left) + text + (fillchar * right)
+
 
 def print_session_started():
     """Print ASCII art for session start"""
@@ -45,21 +81,17 @@ def print_session_finished(duration_minutes):
 
 
 def print_box(flower):
-    """Print a flower surrounded by a decorative box"""
-    # split the flower into strings
+    """Print a flower surrounded by a decorative box with width-aware centering."""
     split_flower = flower.split("\n")
-    # create empty array
-    lengths = []
-    # loop through the split and get the lengths
+    # Determine max display width across lines
+    max_w = 0
     for i in split_flower:
-        lengths.append(len(i))
-    # max value is max length
-    max_width = max(lengths)
-    # print top box side
-    print("╭" + (max_width + 2) * "─" + "╮")
-    # print centered line for each of the split lines
+        max_w = max(max_w, display_width(i))
+    # Top border
+    print("╭" + (max_w + 2) * "─" + "╮")
+    # Center each line according to display width
     for line in split_flower:
-        centered = line.center(max_width + 2)
+        centered = pad_center_by_width(line, max_w + 2)
         print("│" + centered + "│")
-    # print bottom box side
-    print("╰" + (max_width + 2) * "─" + "╯")
+    # Bottom border
+    print("╰" + (max_w + 2) * "─" + "╯")
