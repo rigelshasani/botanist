@@ -4,6 +4,9 @@ Utility functions for Botanist.
 
 import re
 
+# Allow only letters, digits, spaces, and common punctuation
+SAFE_DESC_RE = re.compile(r"[^a-zA-Z0-9 \t\.,;:!?()\[\]\-_\"'/\\]+")
+
 
 def sanitize_description(description):
     """
@@ -15,40 +18,40 @@ def sanitize_description(description):
     Returns:
         str: Sanitized description
     """
-    if not description or not isinstance(description, str):
+    if not isinstance(description, str) or not description:
         return "None provided."
-    
+
     # Remove leading/trailing whitespace
     description = description.strip()
-    
+
     # Return default if empty after stripping
     if not description:
         return "None provided."
-    
+
     # Remove potentially dangerous characters and control characters
-    # Keep alphanumeric, spaces, common punctuation
-    description = re.sub(r'[^\w\s\-\.\,\!\?\:\;\(\)\[\]\'\"]+', '', description)
-    
+    # Keep alphanumeric, spaces, and common punctuation
+    description = SAFE_DESC_RE.sub('', description)
+
     # Collapse multiple spaces into single space
-    description = re.sub(r'\s+', ' ', description)
-    
+    description = re.sub(r"\s+", " ", description)
+
     # Limit length to prevent extremely long descriptions
     max_length = 200
     if len(description) > max_length:
         description = description[:max_length].rstrip() + "..."
-    
+
     # Prevent injection-style patterns
     dangerous_patterns = [
-        r'<script.*?</script>',
-        r'javascript:',
-        r'data:',
-        r'vbscript:',
-        r'on\w+\s*=',
+        r"<script.*?</script>",
+        r"javascript:",
+        r"data:",
+        r"vbscript:",
+        r"on\w+\s*=",
     ]
-    
+
     for pattern in dangerous_patterns:
-        description = re.sub(pattern, '', description, flags=re.IGNORECASE)
-    
+        description = re.sub(pattern, "", description, flags=re.IGNORECASE)
+
     return description
 
 
@@ -69,3 +72,4 @@ def validate_time_input(time_str):
         return True, value
     except (ValueError, TypeError):
         return False, None
+
