@@ -2,6 +2,7 @@
 .coverage
 htmlcov/
 .pytest_cache/
+.coverdir/
 
 # CSV / data exports
 *.csv
@@ -11,6 +12,7 @@ exportedGarden.csv
 .hiddenBotanist
 .hiddenGarden.json
 .hiddenGardenOriginal.json
+.tmp_testdata/
 
 # Helper / standalone scripts not to track
 merge_manual.py
