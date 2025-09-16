@@ -1,5 +1,4 @@
-from botanist import Session
-
+from botanist_pkg.session import Session
 import datetime
 
 def test_start_records_time():
@@ -26,7 +25,8 @@ def test_get_duration():
     session.finish_time = datetime.datetime(2025, 6, 20, 11, 30, 0)  # 11:30:00
     # Now what should we assert?
     duration = session.get_duration()
-    assert duration == "10:00-11:30 -- 01h 30m"# What should 1h 30m equal?
+    expected_prefix = session.start_time.strftime("%A %m/%d")
+    assert duration == f"{expected_prefix} -- 10:00-11:30 -- 01h 30m"
 
 def test_format_for_obsidian():
     # Create a session
@@ -37,8 +37,9 @@ def test_format_for_obsidian():
     session.finish()
     session.finish_time = datetime.datetime(2025, 6, 20, 13, 30, 0)
     # Call a method like session.format_for_obsidian("Botanist TDD")
-    content = session.format_for_obsidian("Botanist TDD") 
-    assert content == "- 12:00-13:30 -- 01h 30m -- Botanist TDD"
+    content = session.format_for_obsidian("Botanist TDD")
+    expected_prefix = session.start_time.strftime("%A %m/%d")
+    assert content == f"- {expected_prefix} -- 12:00-13:30 -- 01h 30m -- Botanist TDD"
     
     # Assert it returns the string: "- 12:00-13:30 -- 1h 30m -- Botanist TDD"
 
@@ -54,9 +55,18 @@ def test_add_time_entry():
     session.finish()
     session.finish_time = datetime.datetime(2025, 6, 20, 13, 30, 0)
     session.save_to_file("filename.txt", "Current Work")
-    with open("filename.txt", "r") as file:
+    with open("filename.txt", "r", encoding="utf-8") as file:
         content = file.read()
-        assert content == "## Time\n- 10:00-11:00 -- 01h 00m -- Previous work\n- 12:00-13:30 -- 01h 30m -- Current Work\n## Quick Notes\n- Learned about modulo operator"
+        # Build expected content dynamically to match date/formatting
+        expected_line = f"- {session.get_duration()} -- Current Work"
+        expected = (
+            "## Time\n"
+            "- 10:00-11:00 -- 01h 00m -- Previous work\n"
+            f"{expected_line}\n"
+            "## Quick Notes\n"
+            "- Learned about modulo operator\n"
+        )
+        assert content == expected
 
 
 
