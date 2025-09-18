@@ -275,6 +275,49 @@ Botanist is built with security, modularity, and maintainability in mind. The co
 - Input validation and error handling
 - Configurable settings for customization
 
+## Release & Packaging
+
+Use this quick checklist to produce a clean release.
+
+1) Clean previous builds
+```
+rm -rf dist botanist.egg-info
+```
+
+2) Bump version
+```
+# Edit setup.py (version field), then commit:
+git add setup.py && git commit -m "chore(release): bump version to X.Y.Z"
+```
+
+3) Build distributions
+```
+# Source distribution (always available)
+python setup.py sdist
+
+# Wheel (recommended) — requires wheel
+pip install wheel
+python setup.py bdist_wheel
+```
+
+4) Install locally to verify
+```
+pip install -U dist/botanist-<version>-py3-none-any.whl || pip install -U dist/botanist-<version>.tar.gz
+botanist --help
+python botanist.py verify
+```
+
+5) Publish (optional)
+```
+pip install twine
+twine upload dist/*
+```
+
+Notes
+- The installed console command is `botanist` (via `console_scripts`).
+- Runtime data is stored per-user (garden.json, backups/, goals.json). Legacy files in the repo root are no longer used or packaged.
+- Backups are weekly snapshots with 5-week retention.
+
 ---
 
 **Botanist was built to make your work bloom. Focus hard, and let your flowers speak for your dedication.** 🌱✨
