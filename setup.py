@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="botanist",
-    version="0.1.1",
+    version="0.1.2",
     description="CLI time tracker that grows an ASCII garden",
     author="Rigels Hasani",
     packages=["botanist_pkg"],
