@@ -7,7 +7,7 @@ import json
 import os
 import shutil
 import datetime
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 from .paths import (
     garden_file_for_read,
     garden_file_for_write,
@@ -23,12 +23,39 @@ def _garden_file_for_read() -> str:
 
 def _backup_dir_current() -> str:
     return str(backup_dir_for_use())
-MAX_BACKUPS = 30  # Keep 30 backup files
+# Keep weekly snapshots for a short rolling window.
+# Policy: at most one backup per ISO week, and retain only the last N weeks.
+BACKUP_RETENTION_WEEKS = 5
+
+
+def _list_backup_files() -> List[Tuple[float, str, str]]:
+    """Return list of backup files as (mtime, path, filename)."""
+    backup_dir = _backup_dir_current()
+    if not os.path.exists(backup_dir):
+        return []
+    backups: List[Tuple[float, str, str]] = []
+    for filename in os.listdir(backup_dir):
+        if filename.startswith("garden_backup_") and filename.endswith(".json"):
+            filepath = os.path.join(backup_dir, filename)
+            try:
+                mtime = os.path.getmtime(filepath)
+            except OSError:
+                continue
+            backups.append((mtime, filepath, filename))
+    # Newest first
+    backups.sort(reverse=True)
+    return backups
+
+
+def _iso_week_key_from_ts(ts: float) -> Tuple[int, int]:
+    dt = datetime.datetime.fromtimestamp(ts)
+    iso_year, iso_week, _ = dt.isocalendar()
+    return (iso_year, iso_week)
 
 
 def create_backup():
     """
-    Create a timestamped backup of the garden file.
+    Create a timestamped backup of the garden file, at most once per ISO week.
     Called before any write operation to ensure data safety.
     """
     if not os.path.exists(_garden_file_for_read()):
@@ -39,46 +66,73 @@ def create_backup():
     if not os.path.exists(backup_dir):
         os.makedirs(backup_dir)
     
-    # Create timestamped backup filename
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_filename = f"garden_backup_{timestamp}.json"
-    backup_path = os.path.join(backup_dir, backup_filename)
+    # Determine if we already have a backup for this ISO week
+    backups = _list_backup_files()
+    now_key = _iso_week_key_from_ts(datetime.datetime.now().timestamp())
+    existing_week_keys = {_iso_week_key_from_ts(m) for (m, _, __) in backups}
+
+    created = False
+    if now_key not in existing_week_keys:
+        # Create timestamped backup filename
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_filename = f"garden_backup_{timestamp}.json"
+        backup_path = os.path.join(backup_dir, backup_filename)
+
+        # Copy the current file to backup
+        try:
+            shutil.copy2(_garden_file_for_read(), backup_path)
+            print(f"[BACKUP] Created: {backup_filename}")
+            created = True
+        except IOError as e:
+            print(f"[WARNING] Failed to create backup: {e}")
+    else:
+        # No need to create another backup this week
+        pass
     
-    # Copy the current file to backup
-    try:
-        shutil.copy2(_garden_file_for_read(), backup_path)
-        print(f"[BACKUP] Created: {backup_filename}")
-    except IOError as e:
-        print(f"[WARNING] Failed to create backup: {e}")
-    
-    # Clean up old backups
+    # Clean up old backups (extras within a week and weeks beyond retention)
     cleanup_old_backups()
 
 
 def cleanup_old_backups():
-    """Remove old backup files, keeping only the most recent MAX_BACKUPS."""
+    """
+    Remove excess backups using a weekly retention policy.
+    - Keep at most one backup per ISO week (the newest in that week)
+    - Retain only the last BACKUP_RETENTION_WEEKS weeks
+    """
     backup_dir = _backup_dir_current()
     if not os.path.exists(backup_dir):
         return
     
     try:
-        # Get all backup files
-        backup_files = []
-        for filename in os.listdir(backup_dir):
-            if filename.startswith("garden_backup_") and filename.endswith(".json"):
-                filepath = os.path.join(backup_dir, filename)
-                mtime = os.path.getmtime(filepath)
-                backup_files.append((mtime, filepath, filename))
-        
-        # Sort by modification time (newest first)
-        backup_files.sort(reverse=True)
-        
-        # Remove old backups beyond MAX_BACKUPS
-        for i, (mtime, filepath, filename) in enumerate(backup_files):
-            if i >= MAX_BACKUPS:
-                os.remove(filepath)
-                print(f"[CLEANUP] Removed old backup: {filename}")
-                
+        backups = _list_backup_files()  # sorted newest first
+        if not backups:
+            return
+
+        # Group backups by ISO week key
+        by_week: Dict[Tuple[int, int], List[Tuple[float, str, str]]] = {}
+        for mtime, path, name in backups:
+            key = _iso_week_key_from_ts(mtime)
+            by_week.setdefault(key, []).append((mtime, path, name))
+
+        # Determine which week keys to retain (newest first)
+        # Sort weeks by the newest mtime within each week (desc)
+        sorted_weeks = sorted(by_week.keys(), key=lambda k: max(x[0] for x in by_week[k]), reverse=True)
+        keep_weeks = set(sorted_weeks[:BACKUP_RETENTION_WEEKS])
+
+        # Within kept weeks, keep only the newest file of that week
+        for week_key, items in by_week.items():
+            # Items are already overall-sorted, but reorder within week just in case
+            items.sort(key=lambda x: x[0], reverse=True)
+            for idx, (mtime, path, name) in enumerate(items):
+                if week_key in keep_weeks and idx == 0:
+                    # Keep the newest one for this week
+                    continue
+                # Otherwise delete
+                try:
+                    os.remove(path)
+                    print(f"[CLEANUP] Removed backup: {name}")
+                except OSError as e:
+                    print(f"[WARNING] Failed to remove backup {name}: {e}")
     except OSError as e:
         print(f"[WARNING] Cleanup failed: {e}")
 
